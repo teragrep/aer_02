@@ -54,10 +54,11 @@ public class SyslogBridge {
     @FunctionName("eventHubTriggerToSyslog")
     public void eventHubTriggerToSyslog(
             @EventHubTrigger(
-                    name = "event",
-                    eventHubName = "EventHubName",
-                    connection = "EventHubConnectionString",
+                    name = "events",
+                    eventHubName = "%EventHubName%",
+                    connection = "AzureWebJobsEventHubConnection", // Managed identity
                     dataType = "string",
+                    consumerGroup = "%ConsumerGroup%",
                     cardinality = Cardinality.MANY
             ) EventData[] events,
             final ExecutionContext context
