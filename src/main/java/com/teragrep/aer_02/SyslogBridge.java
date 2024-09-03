@@ -45,9 +45,34 @@
  */
 package com.teragrep.aer_02;
 
-public class Main {
+import com.azure.messaging.eventhubs.EventData;
+import com.microsoft.azure.functions.annotation.*;
+import com.microsoft.azure.functions.*;
 
-    public static void main(String[] args) {
-        System.out.println("Hello aer_02");
+public class SyslogBridge {
+
+    @FunctionName("eventHubTriggerToSyslog")
+    public void eventHubTriggerToSyslog(
+            @EventHubTrigger(
+                    name = "event",
+                    eventHubName = "EventHubName",
+                    connection = "EventHubConnectionString",
+                    dataType = "string",
+                    cardinality = Cardinality.MANY
+            ) EventData[] events,
+            final ExecutionContext context
+    ) {
+        context.getLogger().info("EventHubTriggerToSyslog");
+        context.getLogger().info("events.length <" + events.length + ">");
+
+        for (EventData eventData : events) {
+            context.getLogger().info("event " + eventData.getBodyAsString());
+            context.getLogger().info("properties " + eventData.getProperties());
+            context.getLogger().info("systemProperties" + eventData.getSystemProperties().toString());
+            context.getLogger().info("eventQueued time " + eventData.getEnqueuedTime());
+            context.getLogger().info("eventOffset" + eventData.getOffset());
+            context.getLogger().info("partitionKey" + eventData.getPartitionKey());
+            context.getLogger().info("sequenceNumber" + eventData.getSequenceNumber());
+        }
     }
 }

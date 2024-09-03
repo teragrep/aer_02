@@ -18,6 +18,18 @@
     <revision>0.0.1</revision>
     <sha1></sha1>
   </properties>
+  <dependencies>
+    <dependency>
+      <groupId>com.azure</groupId>
+      <artifactId>azure-messaging-eventhubs</artifactId>
+      <version>5.15.0</version>
+    </dependency>
+    <dependency>
+      <groupId>com.microsoft.azure.functions</groupId>
+      <artifactId>azure-functions-java-library</artifactId>
+      <version>3.1.0</version>
+    </dependency>
+  </dependencies>
   <build>
     <directory>${project.basedir}/target</directory>
     <finalName>aer_02</finalName>
