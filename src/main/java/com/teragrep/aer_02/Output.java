@@ -1,6 +1,6 @@
 /*
- * Azure EventHub to syslog bridge using Azure Java Function AER-02
- * Copyright (C) 2024 Suomen Kanuuna Oy
+ * Teragrep Azure Eventhub Reader
+ * Copyright (C) 2023  Suomen Kanuuna Oy
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -13,7 +13,7 @@
  * GNU Affero General Public License for more details.
  *
  * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ * along with this program.  If not, see <https://github.com/teragrep/teragrep/blob/main/LICENSE>.
  *
  *
  * Additional permission under GNU Affero General Public License version 3
@@ -43,11 +43,11 @@
  * Teragrep, the applicable Commercial License may apply to this file if you as
  * a licensee so wish it.
  */
+
 package com.teragrep.aer_02;
 
-public class Main {
+import java.util.function.Consumer;
 
-    public static void main(String[] args) {
-        System.out.println("Hello aer_02");
-    }
+public interface Output extends Consumer<byte[]>, AutoCloseable {
+
 }
