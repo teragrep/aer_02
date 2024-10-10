@@ -77,7 +77,7 @@ import java.util.function.BiConsumer;
 import static com.codahale.metrics.MetricRegistry.name;
 
 final class EventDataConsumer implements AutoCloseable, BiConsumer<EventData, PartitionContext> {
-
+    // Note: Checkpointing is handled automatically.
     private final Output output;
     private final String realHostName;
     private final SyslogConfig syslogConfig;
@@ -160,7 +160,7 @@ final class EventDataConsumer implements AutoCloseable, BiConsumer<EventData, Pa
     @Override
     public void accept(EventData eventData, PartitionContext partitionContext) {
         int messageLength = eventData.getBody().length;
-        String partitionId = eventData.getPartitionKey();
+        String partitionId = partitionContext.getPartitionId();
 
         records.incrementAndGet();
         allSize.addAndGet(messageLength);
@@ -175,7 +175,8 @@ final class EventDataConsumer implements AutoCloseable, BiConsumer<EventData, Pa
             @Override
             public Long getValue() {
                 // TODO:
-                return eventContext.getLastEnqueuedEventProperties().getOffset() - eventData.getOffset();
+                //return eventContext.getLastEnqueuedEventProperties().getOffset() - eventData.getOffset();
+                return 0L;
             }
         });
 
@@ -237,10 +238,6 @@ final class EventDataConsumer implements AutoCloseable, BiConsumer<EventData, Pa
                 .withMsg(eventData.getBodyAsString());
 
         output.accept(syslogMessage.toRfc5424SyslogMessage().getBytes(StandardCharsets.UTF_8));
-        // Every 10 events received, it will update the checkpoint stored in Azure Blob Storage.
-        if (eventData.getSequenceNumber() % 10 == 0) {
-            //TODO: eventContext.updateCheckpoint();
-        }
     }
 
     @Override
