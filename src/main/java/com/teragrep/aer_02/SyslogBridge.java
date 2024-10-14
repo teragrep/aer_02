@@ -56,6 +56,8 @@ import com.teragrep.aer_02.config.source.Sourceable;
 
 public class SyslogBridge {
 
+    private EventDataConsumer consumer = null;
+
     @FunctionName("eventHubTriggerToSyslog")
     public void eventHubTriggerToSyslog(
             @EventHubTrigger(
@@ -68,10 +70,13 @@ public class SyslogBridge {
             final ExecutionContext context,
             @BindingName("PartitionContext") PartitionContext partitionContext
     ) {
-        final Sourceable configSource = configSource();
-        final int prometheusPort = new MetricsConfig(configSource).prometheusPort;
 
-        EventDataConsumer consumer = new EventDataConsumer(configSource, prometheusPort);
+        if (consumer == null) {
+            final Sourceable configSource = configSource();
+            final int prometheusPort = new MetricsConfig(configSource).prometheusPort;
+
+            consumer = new EventDataConsumer(configSource, prometheusPort);
+        }
 
         for (EventData eventData : events) {
             consumer.accept(eventData, partitionContext);
