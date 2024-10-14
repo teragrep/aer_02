@@ -72,18 +72,8 @@ public class SyslogBridge {
         final int prometheusPort = new MetricsConfig(configSource).prometheusPort;
 
         EventDataConsumer consumer = new EventDataConsumer(configSource, prometheusPort);
-        context.getLogger().info("EventHubTriggerToSyslog");
-        context.getLogger().info("events.length <" + events.length + ">");
 
         for (EventData eventData : events) {
-            context.getLogger().info("event " + eventData.getBodyAsString());
-            context.getLogger().info("properties " + eventData.getProperties());
-            context.getLogger().info("systemProperties" + eventData.getSystemProperties().toString());
-            context.getLogger().info("eventQueued time " + eventData.getEnqueuedTime());
-            context.getLogger().info("eventOffset" + eventData.getOffset());
-            context.getLogger().info("partitionKey" + eventData.getPartitionKey());
-            context.getLogger().info("sequenceNumber" + eventData.getSequenceNumber());
-
             consumer.accept(eventData, partitionContext);
         }
     }
