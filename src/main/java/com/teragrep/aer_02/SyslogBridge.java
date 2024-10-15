@@ -51,7 +51,6 @@ import com.microsoft.azure.functions.annotation.*;
 import com.microsoft.azure.functions.*;
 import com.teragrep.aer_02.config.MetricsConfig;
 import com.teragrep.aer_02.config.source.EnvironmentSource;
-import com.teragrep.aer_02.config.source.PropertySource;
 import com.teragrep.aer_02.config.source.Sourceable;
 
 public class SyslogBridge {
@@ -72,7 +71,7 @@ public class SyslogBridge {
     ) {
 
         if (consumer == null) {
-            final Sourceable configSource = configSource();
+            final Sourceable configSource = new EnvironmentSource();
             final int prometheusPort = new MetricsConfig(configSource).prometheusPort;
 
             consumer = new EventDataConsumer(configSource, prometheusPort);
@@ -81,22 +80,5 @@ public class SyslogBridge {
         for (EventData eventData : events) {
             consumer.accept(eventData, partitionContext);
         }
-    }
-
-    private Sourceable configSource() {
-        String type = System.getProperty("config.source", "properties");
-
-        Sourceable rv;
-        if ("properties".equals(type)) {
-            rv = new PropertySource();
-        }
-        else if ("environment".equals(type)) {
-            rv = new EnvironmentSource();
-        }
-        else {
-            throw new IllegalArgumentException("config.source not within supported types: [properties, environment]");
-        }
-
-        return rv;
     }
 }
