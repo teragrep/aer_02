@@ -47,7 +47,8 @@ package com.teragrep.aer_02.config;
 
 import com.teragrep.aer_02.config.source.Sourceable;
 
-final public class SyslogConfig {
+public final class SyslogConfig {
+
     // TODO this is a copy from snw_01, with configSource
     public final Sourceable configSource;
     public final String hostname;
@@ -58,18 +59,18 @@ final public class SyslogConfig {
         this.hostname = getHostname();
         this.appName = getAppName();
     }
+
     /**
      * @return syslog.appname
      */
     private String getAppName() {
-        return configSource.source("syslog.appname","aer-01");
+        return configSource.source("syslog.appname", "aer-01");
     }
 
     /**
      * @return syslog.hostname
      */
     private String getHostname() {
-        return configSource.source("syslog.hostname","localhost.localdomain");
+        return configSource.source("syslog.hostname", "localhost.localdomain");
     }
 }
-

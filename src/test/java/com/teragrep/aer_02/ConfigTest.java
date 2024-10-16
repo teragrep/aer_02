@@ -55,11 +55,16 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 public class ConfigTest {
-    @Disabled(value="fix maven")
+
+    @Disabled(value = "fix maven")
     @Test
     public void testConfigFromEnv() {
         AzureConfig azureConfig = new AzureConfig(new EnvironmentSource()); // AZURE_NAMESPACE comes from maven
-        Assertions.assertEquals("azure_namespace_from_env", azureConfig.namespaceName, "Expected to get config from environment variable");
+        Assertions
+                .assertEquals(
+                        "azure_namespace_from_env", azureConfig.namespaceName,
+                        "Expected to get config from environment variable"
+                );
     }
 
     @Test

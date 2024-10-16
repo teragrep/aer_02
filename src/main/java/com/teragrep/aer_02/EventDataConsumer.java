@@ -77,6 +77,7 @@ import java.util.function.BiConsumer;
 import static com.codahale.metrics.MetricRegistry.name;
 
 final class EventDataConsumer implements AutoCloseable, BiConsumer<EventData, PartitionContext> {
+
     // Note: Checkpointing is handled automatically.
     private final Output output;
     private final String realHostName;
@@ -96,10 +97,10 @@ final class EventDataConsumer implements AutoCloseable, BiConsumer<EventData, Pa
 
     EventDataConsumer(Sourceable configSource, MetricRegistry metricRegistry, int prometheusPort) {
         this(
-            configSource,
-            new DefaultOutput("defaultOutput", new RelpConfig(configSource), metricRegistry),
-            metricRegistry,
-            prometheusPort
+                configSource,
+                new DefaultOutput("defaultOutput", new RelpConfig(configSource), metricRegistry),
+                metricRegistry,
+                prometheusPort
         );
     }
 
@@ -119,15 +120,16 @@ final class EventDataConsumer implements AutoCloseable, BiConsumer<EventData, Pa
         jettyServer = new Server(prometheusPort);
         startMetrics();
 
-        metricRegistry.register(name(EventDataConsumer.class, "estimated-data-depth"),
-                (Gauge<Double>) () -> (allSize.get() / records.doubleValue()) / records.doubleValue());
+        metricRegistry
+                .register(name(EventDataConsumer.class, "estimated-data-depth"), (Gauge<Double>) () -> (allSize.get() / records.doubleValue()) / records.doubleValue());
     }
 
     private String getRealHostName() {
         String hostname;
         try {
             hostname = InetAddress.getLocalHost().getHostName();
-        } catch (UnknownHostException e) {
+        }
+        catch (UnknownHostException e) {
             hostname = "localhost";
         }
         return hostname;
@@ -166,12 +168,14 @@ final class EventDataConsumer implements AutoCloseable, BiConsumer<EventData, Pa
         allSize.addAndGet(messageLength);
 
         metricRegistry.gauge(name(EventDataConsumer.class, "latency-seconds", partitionId), () -> new Gauge<Long>() {
+
             @Override
             public Long getValue() {
                 return Instant.now().getEpochSecond() - eventData.getEnqueuedTime().getEpochSecond();
             }
         });
         metricRegistry.gauge(name(EventDataConsumer.class, "depth-bytes", partitionId), () -> new Gauge<Long>() {
+
             @Override
             public Long getValue() {
                 // TODO:
@@ -184,9 +188,8 @@ final class EventDataConsumer implements AutoCloseable, BiConsumer<EventData, Pa
 
         // FIXME proper handling of non-provided uuids
         if (eventUuid == null) {
-            eventUuid = "aer_01="+UUID.randomUUID();
+            eventUuid = "aer_01=" + UUID.randomUUID();
         }
-
 
         SDElement sdId = new SDElement("event_id@48577")
                 .addSDParam("hostname", realHostName)
@@ -214,12 +217,12 @@ final class EventDataConsumer implements AutoCloseable, BiConsumer<EventData, Pa
         /*
         // TODO add this too as SDElement
         SDElement sdCorId = new SDElement("id@123").addSDParam("corId", eventData.getCorrelationId());
-
+        
         // TODO metrics about these vs last retrieved, these are tracked per partition!:
         eventContext.getLastEnqueuedEventProperties().getEnqueuedTime();
         eventContext.getLastEnqueuedEventProperties().getSequenceNumber();
         eventContext.getLastEnqueuedEventProperties().getRetrievalTime(); // null if not retrieved
-
+        
         // TODO compare these to above
         eventData.getPartitionKey();
         eventData.getProperties();

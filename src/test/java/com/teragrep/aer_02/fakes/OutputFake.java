@@ -43,12 +43,12 @@
  * Teragrep, the applicable Commercial License may apply to this file if you as
  * a licensee so wish it.
  */
-
 package com.teragrep.aer_02.fakes;
 
 import com.teragrep.aer_02.Output;
 
 public final class OutputFake implements Output {
+
     @Override
     public void close() throws Exception {
         // No functionality for a fake

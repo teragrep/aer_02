@@ -45,11 +45,11 @@
  */
 package com.teragrep.aer_02.config;
 
-
 import com.teragrep.aer_02.config.source.Sourceable;
 
 // copy from snw_01 with fixes
-final public class RelpConfig {
+public final class RelpConfig {
+
     public final Sourceable configSource;
     public final int connectionTimeout;
     public final int readTimeout;
@@ -80,16 +80,16 @@ final public class RelpConfig {
      * @return relp.transaction.read.timeout
      */
     private int getReadTimeout() {
-        String readTimeout = configSource.source("relp.transaction.read.timeout", "5000");
-        return Integer.parseInt(readTimeout);
+        String rto = configSource.source("relp.transaction.read.timeout", "5000");
+        return Integer.parseInt(rto);
     }
 
     /**
      * @return relp.transaction.write.timeout
      */
     private int getWriteTimeout() {
-        String writeTimeout = configSource.source("relp.transaction.write.timeout", "5000");
-        return Integer.parseInt(writeTimeout);
+        String wto = configSource.source("relp.transaction.write.timeout", "5000");
+        return Integer.parseInt(wto);
     }
 
     /**

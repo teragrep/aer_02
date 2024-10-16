@@ -1,6 +1,10 @@
 # Build output
 target/
 *.class
+# obj folder
+obj/
+# csproj file
+extensions.csproj
 
 # Log file
 *.log

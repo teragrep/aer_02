@@ -47,7 +47,8 @@ package com.teragrep.aer_02.config;
 
 import com.teragrep.aer_02.config.source.Sourceable;
 
-final public class AzureConfig {
+public final class AzureConfig {
+
     public final Sourceable configSource;
     public final String namespaceName;
     public final String eventHubName;
@@ -71,7 +72,8 @@ final public class AzureConfig {
     }
 
     private String getBlobStorageEndpoint() {
-        return configSource.source("azure.blobstorage.endpoint", "https://<STORAGE ACCOUNT NAME>.blob.core.windows.net");
+        return configSource
+                .source("azure.blobstorage.endpoint", "https://<STORAGE ACCOUNT NAME>.blob.core.windows.net");
     }
 
     private String getBlobStorageContainerName() {

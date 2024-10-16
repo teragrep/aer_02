@@ -60,6 +60,7 @@ import static com.codahale.metrics.MetricRegistry.name;
 
 // TODO unify, this is a copy from cfe_35 which is a copy from rlo_10 with FIXES
 final class DefaultOutput implements Output {
+
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultOutput.class);
 
     private final RelpConnection relpConnection;
@@ -76,21 +77,29 @@ final class DefaultOutput implements Output {
     private final Timer sendLatency;
     private final Timer connectLatency;
 
-
     DefaultOutput(String name, RelpConfig relpConfig, MetricRegistry metricRegistry) {
         this(name, relpConfig, metricRegistry, new RelpConnection());
     }
 
     DefaultOutput(String name, RelpConfig relpConfig, MetricRegistry metricRegistry, RelpConnection relpConnection) {
-        this(name, relpConfig, metricRegistry, relpConnection, new SlidingWindowReservoir(10000), new SlidingWindowReservoir(10000));
+        this(
+                name,
+                relpConfig,
+                metricRegistry,
+                relpConnection,
+                new SlidingWindowReservoir(10000),
+                new SlidingWindowReservoir(10000)
+        );
     }
 
-    DefaultOutput(String name,
-                  RelpConfig relpConfig,
-                  MetricRegistry metricRegistry,
-                  RelpConnection relpConnection,
-                  Reservoir sendReservoir,
-                  Reservoir connectReservoir) {
+    DefaultOutput(
+            String name,
+            RelpConfig relpConfig,
+            MetricRegistry metricRegistry,
+            RelpConnection relpConnection,
+            Reservoir sendReservoir,
+            Reservoir connectReservoir
+    ) {
         this.relpAddress = relpConfig.destinationAddress;
         this.relpPort = relpConfig.destinationPort;
         this.reconnectInterval = relpConfig.reconnectInterval;
@@ -105,8 +114,10 @@ final class DefaultOutput implements Output {
         this.resends = metricRegistry.counter(name(DefaultOutput.class, "<[" + name + "]>", "resends"));
         this.connects = metricRegistry.counter(name(DefaultOutput.class, "<[" + name + "]>", "connects"));
         this.retriedConnects = metricRegistry.counter(name(DefaultOutput.class, "<[" + name + "]>", "retriedConnects"));
-        this.sendLatency = metricRegistry.timer(name(DefaultOutput.class, "<[" + name + "]>", "sendLatency"), () -> new Timer(sendReservoir));
-        this.connectLatency = metricRegistry.timer(name(DefaultOutput.class, "<[" + name + "]>", "connectLatency"), () -> new Timer(connectReservoir));
+        this.sendLatency = metricRegistry
+                .timer(name(DefaultOutput.class, "<[" + name + "]>", "sendLatency"), () -> new Timer(sendReservoir));
+        this.connectLatency = metricRegistry
+                .timer(name(DefaultOutput.class, "<[" + name + "]>", "connectLatency"), () -> new Timer(connectReservoir));
 
         connect();
     }
@@ -124,9 +135,11 @@ final class DefaultOutput implements Output {
                  */
                 context.close(); // manually close here, so the timer is only updated if no exceptions were thrown
                 connects.inc();
-            } catch (IOException | TimeoutException e) {
+            }
+            catch (IOException | TimeoutException e) {
                 LOGGER.error("Exception while connecting to <[{}]>:<[{}]>", relpAddress, relpPort, e);
-            } catch (UnresolvedAddressException e) {
+            }
+            catch (UnresolvedAddressException e) {
                 LOGGER.error("Can't resolve address of target <[{}]>", relpAddress, e);
             }
 
@@ -134,13 +147,17 @@ final class DefaultOutput implements Output {
                 try {
                     Thread.sleep(reconnectInterval);
                     retriedConnects.inc();
-                } catch (InterruptedException e) {
-                    LOGGER.warn("Sleep interrupted while waiting for reconnectInterval <[{}]> on <[{}]>:<[{}]>", reconnectInterval, relpAddress, relpPort, e);
+                }
+                catch (InterruptedException e) {
+                    LOGGER
+                            .warn(
+                                    "Sleep interrupted while waiting for reconnectInterval <[{}]> on <[{}]>:<[{}]>",
+                                    reconnectInterval, relpAddress, relpPort, e
+                            );
                 }
             }
         }
     }
-
 
     @Override
     public void accept(byte[] syslogMessage) {
@@ -158,7 +175,8 @@ final class DefaultOutput implements Output {
                     records.inc(1);
                     bytes.inc(syslogMessage.length);
 
-                } catch (IllegalStateException | IOException | TimeoutException e) {
+                }
+                catch (IllegalStateException | IOException | TimeoutException e) {
                     LOGGER.error("Exception while committing a batch to <[{}]>:<[{}]>", relpAddress, relpPort, e);
                 }
                 // Check if everything has been sent, retry and reconnect if not.
@@ -171,11 +189,13 @@ final class DefaultOutput implements Output {
                     relpConnection.tearDown();
                     try {
                         Thread.sleep(reconnectInterval);
-                    } catch(InterruptedException e) {
+                    }
+                    catch (InterruptedException e) {
                         throw new RuntimeException(e);
                     }
                     connect();
-                } else {
+                }
+                else {
                     allSent = true;
                 }
             }
@@ -184,10 +204,7 @@ final class DefaultOutput implements Output {
 
     @Override
     public String toString() {
-        return "DefaultOutput{" +
-                "relpAddress='" + relpAddress + '\'' +
-                ", relpPort=" + relpPort +
-                '}';
+        return "DefaultOutput{" + "relpAddress='" + relpAddress + '\'' + ", relpPort=" + relpPort + '}';
     }
 
     public void close() {

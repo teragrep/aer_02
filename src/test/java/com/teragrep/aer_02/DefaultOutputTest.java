@@ -43,7 +43,6 @@
  * Teragrep, the applicable Commercial License may apply to this file if you as
  * a licensee so wish it.
  */
-
 package com.teragrep.aer_02;
 
 import com.codahale.metrics.MetricRegistry;
@@ -81,8 +80,9 @@ public class DefaultOutputTest {
         MetricRegistry metricRegistry = new MetricRegistry();
         SlidingWindowReservoir sendReservoir = new SlidingWindowReservoir(measurementLimit);
         SlidingWindowReservoir connectReservoir = new SlidingWindowReservoir(measurementLimit);
-        try (DefaultOutput output = new DefaultOutput("defaultOutput", new RelpConfig(new PropertySource()),
-                metricRegistry, new RelpConnectionFake(), sendReservoir, connectReservoir)) {
+        try (
+                DefaultOutput output = new DefaultOutput("defaultOutput", new RelpConfig(new PropertySource()), metricRegistry, new RelpConnectionFake(), sendReservoir, connectReservoir)
+        ) {
 
             for (int i = 0; i < measurementLimit + 100; i++) { // send more messages than the limit is
                 output.accept(syslogMessage.toRfc5424SyslogMessage().getBytes(StandardCharsets.UTF_8));
@@ -111,8 +111,9 @@ public class DefaultOutputTest {
         SlidingWindowReservoir sendReservoir = new SlidingWindowReservoir(measurementLimit);
         SlidingWindowReservoir connectReservoir = new SlidingWindowReservoir(measurementLimit);
         RelpConnection relpConnection = new ConnectionlessRelpConnectionFake(reconnections); // use a fake that forces reconnects
-        try (DefaultOutput output = new DefaultOutput("defaultOutput", new RelpConfig(new PropertySource()),
-                metricRegistry, relpConnection, sendReservoir, connectReservoir)) {
+        try (
+                DefaultOutput output = new DefaultOutput("defaultOutput", new RelpConfig(new PropertySource()), metricRegistry, relpConnection, sendReservoir, connectReservoir)
+        ) {
             output.accept(syslogMessage.toRfc5424SyslogMessage().getBytes(StandardCharsets.UTF_8));
         }
 
@@ -137,8 +138,9 @@ public class DefaultOutputTest {
         // set up DefaultOutput
         MetricRegistry metricRegistry = new MetricRegistry();
         RelpConnection relpConnection = new ThrowingRelpConnectionFake(reconnections); // use a fake that throws exceptions when connecting
-        try (DefaultOutput output = new DefaultOutput("defaultOutput", new RelpConfig(new PropertySource()),
-                metricRegistry, relpConnection)) {
+        try (
+                DefaultOutput output = new DefaultOutput("defaultOutput", new RelpConfig(new PropertySource()), metricRegistry, relpConnection)
+        ) {
             output.accept(syslogMessage.toRfc5424SyslogMessage().getBytes(StandardCharsets.UTF_8));
         }
 

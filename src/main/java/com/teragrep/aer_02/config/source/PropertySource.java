@@ -51,12 +51,14 @@ import org.slf4j.LoggerFactory;
 import java.util.Properties;
 
 public final class PropertySource implements Sourceable {
+
     private static final Logger LOGGER = LoggerFactory.getLogger(PropertySource.class);
     private final Properties properties;
 
     public PropertySource() {
         this.properties = System.getProperties();
     }
+
     @Override
     public String source(String name, String defaultValue) {
         LOGGER.debug("sourcing property name <[{}]>", name);
