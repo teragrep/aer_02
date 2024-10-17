@@ -70,6 +70,9 @@ public class SyslogBridge {
             @BindingName("PartitionContext") PartitionContext partitionContext
     ) {
 
+        context.getLogger().info("eventHubTriggerToSyslog triggered");
+        context.getLogger().info("Got events: " + events.length);
+
         if (consumer == null) {
             final Sourceable configSource = new EnvironmentSource();
             final int prometheusPort = new MetricsConfig(configSource).prometheusPort;
