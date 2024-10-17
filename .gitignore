@@ -5,6 +5,8 @@ target/
 obj/
 # csproj file
 extensions.csproj
+# azure
+.azure/
 
 # Log file
 *.log
