@@ -36,12 +36,24 @@
     <dependency>
       <groupId>com.teragrep</groupId>
       <artifactId>rlp_01</artifactId>
-      <version>3.0.1</version>
+      <version>4.0.3</version>
     </dependency>
     <dependency>
       <groupId>com.teragrep</groupId>
       <artifactId>rlo_14</artifactId>
       <version>1.0.1</version>
+    </dependency>
+    <dependency>
+      <groupId>com.teragrep</groupId>
+      <artifactId>rlp_03</artifactId>
+      <version>8.0.1</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.teragrep</groupId>
+      <artifactId>rlo_06</artifactId>
+      <version>9.0.1</version>
+      <scope>test</scope>
     </dependency>
     <!-- metrics -->
     <dependency>
@@ -528,6 +540,10 @@
         <configuration>
           <parallel>all</parallel>
           <useUnlimitedThreads>true</useUnlimitedThreads>
+          <environmentVariables>
+            <RELP_CONNECTION_PORT>1601</RELP_CONNECTION_PORT>
+            <METRICS_PROMETHEUSPORT>1701</METRICS_PROMETHEUSPORT>
+          </environmentVariables>
         </configuration>
       </plugin>
       <plugin>

@@ -64,7 +64,7 @@ public final class SyslogConfig {
      * @return syslog.appname
      */
     private String getAppName() {
-        return configSource.source("syslog.appname", "aer-01");
+        return configSource.source("syslog.appname", "aer-02");
     }
 
     /**

@@ -61,7 +61,7 @@ public class SyslogBridge {
     public void eventHubTriggerToSyslog(
             @EventHubTrigger(
                     name = "event",
-                    eventHubName = "eventhub-01", // Name of the EVENT HUB, not the app setting
+                    eventHubName = "%EventHubName%", // Name of the EVENT HUB, not the app setting
                     connection = "EventHubConnectionString", // Name of the APPLICATION SETTING
                     cardinality = Cardinality.MANY
             ) EventData[] events,

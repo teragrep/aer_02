@@ -54,6 +54,7 @@ import com.teragrep.aer_02.config.source.PropertySource;
 import com.teragrep.aer_02.config.source.Sourceable;
 import com.teragrep.aer_02.fakes.*;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 
@@ -103,37 +104,43 @@ public class EventContextConsumerTest {
         Assertions.assertTrue(gauge2.getValue() >= latency);
     }
 
-    /*  @Test
+    @Disabled(value = "depth-bytes metric not implemented")
+    @Test
     public void testDepthBytesMetric() {
-        EventContextFactory eventContextFactory = new CheckpointlessEventContextFactory();
+        //EventContextFactory eventContextFactory = new CheckpointlessEventContextFactory();
         MetricRegistry metricRegistry = new MetricRegistry();
-    
+
         long depth1 = 0L;
         final double records = 10;
         EventData eventData = new EventDataFake();
-    
-        EventDataConsumer eventDataConsumer = new EventDataConsumer(configSource, new OutputFake(), metricRegistry, prometheusPort);
+
+        EventDataConsumer eventDataConsumer = new EventDataConsumer(
+                configSource,
+                new OutputFake(),
+                metricRegistry,
+                prometheusPort
+        );
         eventDataConsumer.accept(eventData, null);
-    
+
         for (int i = 1; i < records; i++) { // records - 1 loops
             if (i == 5) { // 5 records per partition
-                depth1 = eventContext.getLastEnqueuedEventProperties().getOffset() - eventContext.getEventData().getOffset();
+                //depth1 = eventContext.getLastEnqueuedEventProperties().getOffset() - eventContext.getEventData().getOffset();
             }
-    
-            eventContextConsumer.accept(eventContext);
+
+            //eventContextConsumer.accept(eventContext);
         }
-    
-        Assertions.assertDoesNotThrow(eventContextConsumer::close);
-    
-        long depth2 = eventContext.getLastEnqueuedEventProperties().getOffset() - eventContext.getEventData().getOffset();
-        Gauge<Long> gauge1 = metricRegistry.gauge(name(EventContextConsumer.class, "depth-bytes", "1"));
-        Gauge<Long> gauge2 = metricRegistry.gauge(name(EventContextConsumer.class, "depth-bytes", "2"));
-    
-        Assertions.assertEquals(depth1, 99L); // offsets are defined in the factory
-        Assertions.assertEquals(depth2, 99L);
-        Assertions.assertEquals(depth1, gauge1.getValue());
-        Assertions.assertEquals(depth2, gauge2.getValue());
-    } */
+
+        //Assertions.assertDoesNotThrow(eventContextConsumer::close);
+
+        //long depth2 = eventContext.getLastEnqueuedEventProperties().getOffset() - eventContext.getEventData().getOffset();
+        //Gauge<Long> gauge1 = metricRegistry.gauge(name(EventContextConsumer.class, "depth-bytes", "1"));
+        //Gauge<Long> gauge2 = metricRegistry.gauge(name(EventContextConsumer.class, "depth-bytes", "2"));
+
+        //Assertions.assertEquals(depth1, 99L); // offsets are defined in the factory
+        //Assertions.assertEquals(depth2, 99L);
+        //Assertions.assertEquals(depth1, gauge1.getValue());
+        //Assertions.assertEquals(depth2, gauge2.getValue());
+    }
 
     @Test
     public void testEstimatedDataDepthMetric() {

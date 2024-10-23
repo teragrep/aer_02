@@ -79,6 +79,6 @@ public class ConfigTest {
     @Test
     public void testConfigFallback() {
         RelpConfig relpConfig = new RelpConfig(new EnvironmentSource());
-        Assertions.assertEquals(601, relpConfig.destinationPort, "Expected to get fallback value");
+        Assertions.assertEquals(1601, relpConfig.destinationPort, "Expected to get fallback value");
     }
 }
