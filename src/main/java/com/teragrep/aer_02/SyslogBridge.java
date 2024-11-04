@@ -83,7 +83,11 @@ public class SyslogBridge {
         }
 
         for (EventData eventData : events) {
-            consumer.accept(eventData, partitionContext);
+            if (eventData != null) {
+                consumer.accept(eventData, partitionContext);
+            } else {
+                context.getLogger().warning("eventHubTriggerToSyslog event data is null");
+            }
         }
     }
 }
