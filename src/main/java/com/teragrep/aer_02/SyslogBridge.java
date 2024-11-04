@@ -61,8 +61,11 @@ public class SyslogBridge {
     public void eventHubTriggerToSyslog(
             @EventHubTrigger(
                     name = "event",
-                    eventHubName = "%EventHubName%", // Name of the EVENT HUB, not the app setting
-                    connection = "EventHubConnectionString", // Name of the APPLICATION SETTING
+                    /* Name of the EVENT HUB, not the app setting. Wrapping value in %'s makes it an environment variable.
+                     * This makes it configurable in app settings. */
+                    eventHubName = "%EventHubName%",
+                    // Name of the APPLICATION SETTING
+                    connection = "EventHubConnectionString",
                     cardinality = Cardinality.MANY
             ) EventData[] events,
             final ExecutionContext context,
