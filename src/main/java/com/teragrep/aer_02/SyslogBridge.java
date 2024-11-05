@@ -64,8 +64,8 @@ public class SyslogBridge {
                     eventHubName = "%EventHubName%",
                     // Name of the APPLICATION SETTING
                     connection = "EventHubConnectionString",
-                    cardinality = Cardinality.MANY,
-                    dataType = "string"
+                    dataType = "string",
+                    cardinality = Cardinality.MANY
             ) String[] events,
             //@BindingName("PartitionContext") PartitionContext partitionContext,
             @BindingName("PropertiesArray") Map<String, Object>[] propertiesArray,
