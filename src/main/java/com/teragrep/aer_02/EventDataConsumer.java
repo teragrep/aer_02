@@ -68,6 +68,7 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.time.ZonedDateTime;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -76,7 +77,7 @@ import java.util.function.BiConsumer;
 
 import static com.codahale.metrics.MetricRegistry.name;
 
-final class EventDataConsumer implements AutoCloseable, BiConsumer<EventData, PartitionContext> {
+final class EventDataConsumer implements AutoCloseable {
 
     // Note: Checkpointing is handled automatically.
     private final Output output;
@@ -159,9 +160,15 @@ final class EventDataConsumer implements AutoCloseable, BiConsumer<EventData, Pa
         }
     }
 
-    @Override
-    public void accept(EventData eventData, PartitionContext partitionContext) {
-        int messageLength = eventData.getBody().length;
+    public void accept(String eventData,
+                       PartitionContext partitionContext,
+                       ZonedDateTime enqueuedTime,
+                       String offset,
+                       String partitionKey,
+                       Long sequenceNumber,
+                       Map<String, Object> props,
+                       Map<String, Object> systemProps) {
+        int messageLength = eventData.length();
         String partitionId = partitionContext.getPartitionId();
 
         records.incrementAndGet();
@@ -171,7 +178,7 @@ final class EventDataConsumer implements AutoCloseable, BiConsumer<EventData, Pa
 
             @Override
             public Long getValue() {
-                return Instant.now().getEpochSecond() - eventData.getEnqueuedTime().getEpochSecond();
+                return Instant.now().getEpochSecond() - enqueuedTime.toInstant().getEpochSecond();
             }
         });
         metricRegistry.gauge(name(EventDataConsumer.class, "depth-bytes", partitionId), () -> new Gauge<Long>() {
@@ -184,7 +191,7 @@ final class EventDataConsumer implements AutoCloseable, BiConsumer<EventData, Pa
             }
         });
 
-        String eventUuid = eventData.getMessageId();
+        String eventUuid = props.get("messageId").toString(); //TODO: check if correct
 
         // FIXME proper handling of non-provided uuids
         if (eventUuid == null) {
@@ -203,17 +210,13 @@ final class EventDataConsumer implements AutoCloseable, BiConsumer<EventData, Pa
                 .addSDParam("partition_id", partitionContext.getPartitionId())
                 .addSDParam("consumer_group", partitionContext.getConsumerGroup());
 
-        Long offset = eventData.getOffset();
-        Instant enqueuedTime = eventData.getEnqueuedTime();
-        String partitionKey = eventData.getPartitionKey();
-        String correlationId = eventData.getCorrelationId();
-        Map<String, Object> properties = eventData.getProperties();
+        String correlationId = props.get("correlationId").toString(); //TODO: same here
         SDElement sdEvent = new SDElement("aer_01_event@48577")
-                .addSDParam("offset", offset == null ? "" : String.valueOf(offset))
+                .addSDParam("offset", offset == null ? "" : offset)
                 .addSDParam("enqueued_time", enqueuedTime == null ? "" : enqueuedTime.toString())
                 .addSDParam("partition_key", partitionKey == null ? "" : partitionKey)
                 .addSDParam("correlation_id", correlationId == null ? "" : correlationId);
-        properties.forEach((key, value) -> sdEvent.addSDParam("property_" + key, value.toString()));
+        props.forEach((key, value) -> sdEvent.addSDParam("property_" + key, value.toString()));
         /*
         // TODO add this too as SDElement
         SDElement sdCorId = new SDElement("id@123").addSDParam("corId", eventData.getCorrelationId());
@@ -230,15 +233,15 @@ final class EventDataConsumer implements AutoCloseable, BiConsumer<EventData, Pa
         SyslogMessage syslogMessage = new SyslogMessage()
                 .withSeverity(Severity.INFORMATIONAL)
                 .withFacility(Facility.LOCAL0)
-                .withTimestamp(eventData.getEnqueuedTime())
+                .withTimestamp(enqueuedTime.toInstant())
                 .withHostname(syslogConfig.hostname)
                 .withAppName(syslogConfig.appName)
                 .withSDElement(sdId)
                 .withSDElement(sdPartition)
                 .withSDElement(sdEvent)
                 //.withSDElement(sdCorId)
-                .withMsgId(eventData.getSequenceNumber().toString())
-                .withMsg(eventData.getBodyAsString());
+                .withMsgId(String.valueOf(sequenceNumber))
+                .withMsg(eventData);
 
         output.accept(syslogMessage.toRfc5424SyslogMessage().getBytes(StandardCharsets.UTF_8));
     }

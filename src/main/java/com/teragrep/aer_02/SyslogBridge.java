@@ -45,13 +45,16 @@
  */
 package com.teragrep.aer_02;
 
-import com.azure.messaging.eventhubs.EventData;
 import com.azure.messaging.eventhubs.models.PartitionContext;
 import com.microsoft.azure.functions.annotation.*;
 import com.microsoft.azure.functions.*;
 import com.teragrep.aer_02.config.MetricsConfig;
 import com.teragrep.aer_02.config.source.EnvironmentSource;
 import com.teragrep.aer_02.config.source.Sourceable;
+
+import java.time.ZonedDateTime;
+import java.util.List;
+import java.util.Map;
 
 public class SyslogBridge {
 
@@ -66,12 +69,27 @@ public class SyslogBridge {
                     eventHubName = "%EventHubName%",
                     // Name of the APPLICATION SETTING
                     connection = "EventHubConnectionString",
-                    cardinality = Cardinality.MANY
-            ) EventData[] events,
+                    cardinality = Cardinality.MANY,
+                    dataType = "string"
+            ) String[] events,
             final ExecutionContext context,
-            @BindingName("PartitionContext") PartitionContext partitionContext
-    ) {
+            @BindingName("PartitionContext") PartitionContext partitionContext,
+            @BindingName("PropertiesArray") List<Map<String, Object>> propertiesArray,
+            @BindingName("SystemPropertiesArray") List<Map<String, Object>> systemPropertiesArray,
+            @BindingName("EnqueuedTimeUtcArray") List<Object> enqueuedTimeUtcArray,
+            @BindingName("OffsetArray") List<String> offsetArray,
+            @BindingName("PartitionKeyArray") List<String> partitionKeyArray,
+            @BindingName("SequenceNumberArray") List<Long> sequenceNumberArray
+            ) {
 
+        context.getLogger().info("Java Event Hub trigger received " + events.length + " messages");
+        context.getLogger().info("message[0]=" + events[0]);
+        context.getLogger().info("Properties for message[0]=" + propertiesArray.get(0));
+        context.getLogger().info("SystemProperties for message[0]="+ systemPropertiesArray.get(0));
+        context.getLogger().info("EnqueuedTimeUtc for message[0]=" + enqueuedTimeUtcArray.get(0));
+        context.getLogger().info("Offset for message[0]=" + offsetArray.get(0));
+        context.getLogger().info("PartitionKey for message[0]=" + partitionKeyArray.get(0));
+        context.getLogger().info("SequenceNumber for message[0]=" + sequenceNumberArray.get(0));
         context.getLogger().fine("eventHubTriggerToSyslog triggered");
         context.getLogger().fine("Got events: " + events.length);
 
@@ -82,9 +100,19 @@ public class SyslogBridge {
             consumer = new EventDataConsumer(configSource, prometheusPort);
         }
 
-        for (EventData eventData : events) {
-            if (eventData != null) {
-                consumer.accept(eventData, partitionContext);
+        for(int index = 0; index < events.length; index++) {
+            if (events[index] != null) {
+                final ZonedDateTime et = ZonedDateTime.parse(enqueuedTimeUtcArray.get(index) + "Z"); // needed as the UTC time presented does not have a TZ
+                context.getLogger().info("Accepting event: " + events[index]);
+                consumer.accept(events[index],
+                        partitionContext,
+                        et ,
+                        offsetArray.get(index),
+                        partitionKeyArray.get(index),
+                        sequenceNumberArray.get(index),
+                        propertiesArray.get(0),
+                        systemPropertiesArray.get(0)
+                );
             }
             else {
                 context.getLogger().warning("eventHubTriggerToSyslog event data is null");

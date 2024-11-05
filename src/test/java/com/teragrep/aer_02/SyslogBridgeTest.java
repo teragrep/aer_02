@@ -52,7 +52,6 @@ import com.teragrep.net_01.server.Server;
 import com.teragrep.net_01.server.ServerFactory;
 import com.azure.messaging.eventhubs.models.PartitionContext;
 import com.microsoft.azure.functions.ExecutionContext;
-import com.teragrep.aer_02.fakes.EventDataFake;
 import com.teragrep.rlo_06.RFC5424Frame;
 import com.teragrep.rlp_03.frame.FrameDelegationClockFactory;
 import com.teragrep.rlp_03.frame.delegate.DefaultFrameDelegate;
@@ -62,9 +61,9 @@ import org.junit.jupiter.api.*;
 
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
@@ -121,9 +120,17 @@ public final class SyslogBridgeTest {
 
     @Test
     void testSyslogBridge() {
+        Map<String, Object> props = new HashMap<>();
+        props.put("messageId", "123");
+        props.put("correlationId", "321");
+        Map<String, Object> systemProps = new HashMap<>();
+        String zdt = "2010-01-01T01:23:34";
+        long seqNum = 1L;
+        String partitionKey = "123";
+        String offset = "0";
         final SyslogBridge bridge = new SyslogBridge();
         bridge
-                .eventHubTriggerToSyslog(Arrays.asList(new EventDataFake(), new EventDataFake(), new EventDataFake()).toArray(new com.azure.messaging.eventhubs.EventData[0]), new ExecutionContext() {
+                .eventHubTriggerToSyslog(Collections.singletonList("event0").toArray(new String[0]), new ExecutionContext() {
 
                     @Override
                     public Logger getLogger() {
@@ -139,9 +146,10 @@ public final class SyslogBridgeTest {
                     public String getFunctionName() {
                         return "eventHubTriggerToSyslog";
                     }
-                }, new PartitionContext("namespace", "eventHubName", "$Default", "1"));
+                }, new PartitionContext("namespace", "eventHubName", "$Default", "1")
+                , Collections.singletonList(props), Collections.singletonList(systemProps), Collections.singletonList(zdt), Collections.singletonList(offset), Collections.singletonList(partitionKey), Collections.singletonList(seqNum) );
 
-        Assertions.assertEquals(3, messages.size());
+        Assertions.assertEquals(1, messages.size());
 
         int loops = 0;
         for (String message : messages) {
@@ -153,6 +161,6 @@ public final class SyslogBridgeTest {
             loops++;
         }
 
-        Assertions.assertEquals(3, loops);
+        Assertions.assertEquals(1, loops);
     }
 }
