@@ -45,20 +45,15 @@
  */
 package com.teragrep.aer_02;
 
-import com.azure.messaging.eventhubs.models.PartitionContext;
 import com.microsoft.azure.functions.annotation.*;
 import com.microsoft.azure.functions.*;
-import com.teragrep.aer_02.config.MetricsConfig;
-import com.teragrep.aer_02.config.source.EnvironmentSource;
-import com.teragrep.aer_02.config.source.Sourceable;
 
-import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
 
 public class SyslogBridge {
 
-    private EventDataConsumer consumer = null;
+   // private EventDataConsumer consumer = null;
 
     @FunctionName("eventHubTriggerToSyslog")
     public void eventHubTriggerToSyslog(
@@ -72,14 +67,14 @@ public class SyslogBridge {
                     cardinality = Cardinality.MANY,
                     dataType = "string"
             ) String[] events,
-            final ExecutionContext context,
-            @BindingName("PartitionContext") PartitionContext partitionContext,
+            //@BindingName("PartitionContext") PartitionContext partitionContext,
             @BindingName("PropertiesArray") Map<String, Object>[] propertiesArray,
             @BindingName("SystemPropertiesArray") Map<String, Object>[] systemPropertiesArray,
             @BindingName("EnqueuedTimeUtcArray") List<Object> enqueuedTimeUtcArray,
             @BindingName("OffsetArray") List<String> offsetArray,
             @BindingName("PartitionKeyArray") List<String> partitionKeyArray,
-            @BindingName("SequenceNumberArray") List<Long> sequenceNumberArray
+            @BindingName("SequenceNumberArray") List<Long> sequenceNumberArray,
+            ExecutionContext context
             ) {
 
         context.getLogger().info("Java Event Hub trigger received " + events.length + " messages");
@@ -93,7 +88,7 @@ public class SyslogBridge {
         context.getLogger().fine("eventHubTriggerToSyslog triggered");
         context.getLogger().fine("Got events: " + events.length);
 
-        if (consumer == null) {
+      /*  if (consumer == null) {
             final Sourceable configSource = new EnvironmentSource();
             final int prometheusPort = new MetricsConfig(configSource).prometheusPort;
 
@@ -117,6 +112,6 @@ public class SyslogBridge {
             else {
                 context.getLogger().warning("eventHubTriggerToSyslog event data is null");
             }
-        }
+        } */
     }
 }
