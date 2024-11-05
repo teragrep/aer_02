@@ -74,8 +74,8 @@ public class SyslogBridge {
             ) String[] events,
             final ExecutionContext context,
             @BindingName("PartitionContext") PartitionContext partitionContext,
-            @BindingName("PropertiesArray") List<Map<String, Object>> propertiesArray,
-            @BindingName("SystemPropertiesArray") List<Map<String, Object>> systemPropertiesArray,
+            @BindingName("PropertiesArray") Map<String, Object>[] propertiesArray,
+            @BindingName("SystemPropertiesArray") Map<String, Object>[] systemPropertiesArray,
             @BindingName("EnqueuedTimeUtcArray") List<Object> enqueuedTimeUtcArray,
             @BindingName("OffsetArray") List<String> offsetArray,
             @BindingName("PartitionKeyArray") List<String> partitionKeyArray,
@@ -84,8 +84,8 @@ public class SyslogBridge {
 
         context.getLogger().info("Java Event Hub trigger received " + events.length + " messages");
         context.getLogger().info("message[0]=" + events[0]);
-        context.getLogger().info("Properties for message[0]=" + propertiesArray.get(0));
-        context.getLogger().info("SystemProperties for message[0]="+ systemPropertiesArray.get(0));
+        context.getLogger().info("Properties for message[0]=" + propertiesArray[0]);
+        context.getLogger().info("SystemProperties for message[0]="+ systemPropertiesArray[0]);
         context.getLogger().info("EnqueuedTimeUtc for message[0]=" + enqueuedTimeUtcArray.get(0));
         context.getLogger().info("Offset for message[0]=" + offsetArray.get(0));
         context.getLogger().info("PartitionKey for message[0]=" + partitionKeyArray.get(0));
@@ -110,8 +110,8 @@ public class SyslogBridge {
                         offsetArray.get(index),
                         partitionKeyArray.get(index),
                         sequenceNumberArray.get(index),
-                        propertiesArray.get(0),
-                        systemPropertiesArray.get(0)
+                        propertiesArray[0],
+                        systemPropertiesArray[0]
                 );
             }
             else {
