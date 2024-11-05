@@ -72,8 +72,8 @@ public class SyslogBridge {
             @BindingName("SystemPropertiesArray") Map<String, Object>[] systemPropertiesArray,
             @BindingName("EnqueuedTimeUtcArray") List<Object> enqueuedTimeUtcArray,
             @BindingName("OffsetArray") List<String> offsetArray,
-            @BindingName("PartitionKeyArray") List<String> partitionKeyArray,
-            @BindingName("SequenceNumberArray") List<Long> sequenceNumberArray,
+            //@BindingName("PartitionKeyArray") List<String> partitionKeyArray,
+            //@BindingName("SequenceNumberArray") List<Long> sequenceNumberArray,
             ExecutionContext context
             ) {
 
@@ -83,8 +83,8 @@ public class SyslogBridge {
         context.getLogger().info("SystemProperties for message[0]="+ systemPropertiesArray[0]);
         context.getLogger().info("EnqueuedTimeUtc for message[0]=" + enqueuedTimeUtcArray.get(0));
         context.getLogger().info("Offset for message[0]=" + offsetArray.get(0));
-        context.getLogger().info("PartitionKey for message[0]=" + partitionKeyArray.get(0));
-        context.getLogger().info("SequenceNumber for message[0]=" + sequenceNumberArray.get(0));
+        //context.getLogger().info("PartitionKey for message[0]=" + partitionKeyArray.get(0));
+        //context.getLogger().info("SequenceNumber for message[0]=" + sequenceNumberArray.get(0));
         context.getLogger().fine("eventHubTriggerToSyslog triggered");
         context.getLogger().fine("Got events: " + events.length);
 
