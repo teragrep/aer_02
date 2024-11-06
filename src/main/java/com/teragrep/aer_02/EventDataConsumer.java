@@ -45,8 +45,6 @@
  */
 package com.teragrep.aer_02;
 
-import com.azure.messaging.eventhubs.EventData;
-import com.azure.messaging.eventhubs.models.PartitionContext;
 import com.codahale.metrics.*;
 import com.codahale.metrics.jmx.JmxReporter;
 import com.teragrep.aer_02.config.RelpConfig;
@@ -58,10 +56,6 @@ import com.teragrep.rlo_14.Severity;
 import com.teragrep.rlo_14.SyslogMessage;
 import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.dropwizard.DropwizardExports;
-import io.prometheus.client.exporter.MetricsServlet;
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.servlet.ServletHolder;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetAddress;
@@ -73,7 +67,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.BiConsumer;
 
 import static com.codahale.metrics.MetricRegistry.name;
 
@@ -86,7 +79,6 @@ final class EventDataConsumer implements AutoCloseable {
     private final MetricRegistry metricRegistry;
     private final JmxReporter jmxReporter;
     private final Slf4jReporter slf4jReporter;
-    private final Server jettyServer;
 
     // metrics
     private final AtomicLong records = new AtomicLong();
@@ -118,7 +110,6 @@ final class EventDataConsumer implements AutoCloseable {
                 .convertRatesTo(TimeUnit.SECONDS)
                 .convertDurationsTo(TimeUnit.MILLISECONDS)
                 .build();
-        jettyServer = new Server(prometheusPort);
         startMetrics();
 
         metricRegistry
@@ -142,34 +133,18 @@ final class EventDataConsumer implements AutoCloseable {
 
         // prometheus-exporter
         CollectorRegistry.defaultRegistry.register(new DropwizardExports(metricRegistry));
-
-        ServletContextHandler context = new ServletContextHandler();
-        context.setContextPath("/");
-        jettyServer.setHandler(context);
-
-        MetricsServlet metricsServlet = new MetricsServlet();
-        ServletHolder servletHolder = new ServletHolder(metricsServlet);
-        context.addServlet(servletHolder, "/metrics");
-
-        // Start the webserver.
-        try {
-            jettyServer.start();
-        }
-        catch (Exception e) {
-            throw new RuntimeException(e);
-        }
     }
 
-    public void accept(String eventData,
-                       PartitionContext partitionContext,
-                       ZonedDateTime enqueuedTime,
-                       String offset,
-                       String partitionKey,
-                       Long sequenceNumber,
-                       Map<String, Object> props,
-                       Map<String, Object> systemProps) {
+    public void accept(
+            String eventData,
+            Map<String, Object> partitionContext,
+            ZonedDateTime enqueuedTime,
+            String offset,
+            Map<String, Object> props,
+            Map<String, Object> systemProps
+    ) {
         int messageLength = eventData.length();
-        String partitionId = partitionContext.getPartitionId();
+        String partitionId = String.valueOf(partitionContext.get("PartitionId"));
 
         records.incrementAndGet();
         allSize.addAndGet(messageLength);
@@ -191,7 +166,7 @@ final class EventDataConsumer implements AutoCloseable {
             }
         });
 
-        String eventUuid = props.get("messageId").toString(); //TODO: check if correct
+        String eventUuid = null;//TODO: check if correct
 
         // FIXME proper handling of non-provided uuids
         if (eventUuid == null) {
@@ -205,17 +180,21 @@ final class EventDataConsumer implements AutoCloseable {
                 .addSDParam("id_source", "source");
 
         SDElement sdPartition = new SDElement("aer_01_partition@48577")
-                .addSDParam("fully_qualified_namespace", partitionContext.getFullyQualifiedNamespace())
-                .addSDParam("eventhub_name", partitionContext.getEventHubName())
-                .addSDParam("partition_id", partitionContext.getPartitionId())
-                .addSDParam("consumer_group", partitionContext.getConsumerGroup());
+                .addSDParam(
+                        "fully_qualified_namespace",
+                        String.valueOf(partitionContext.getOrDefault("FullyQualifiedNamespace", ""))
+                )
+                .addSDParam("eventhub_name", String.valueOf(partitionContext.getOrDefault("EventHubName", "")))
+                .addSDParam("partition_id", String.valueOf(partitionContext.getOrDefault("PartitionId", "")))
+                .addSDParam("consumer_group", String.valueOf(partitionContext.getOrDefault("ConsumerGroup", "")));
 
-        String correlationId = props.get("correlationId").toString(); //TODO: same here
+        String partitionKey = String.valueOf(systemProps.getOrDefault("PartitionKey", ""));
+        // String correlationId = props.get("correlationId").toString(); //TODO: same here
         SDElement sdEvent = new SDElement("aer_01_event@48577")
                 .addSDParam("offset", offset == null ? "" : offset)
                 .addSDParam("enqueued_time", enqueuedTime == null ? "" : enqueuedTime.toString())
-                .addSDParam("partition_key", partitionKey == null ? "" : partitionKey)
-                .addSDParam("correlation_id", correlationId == null ? "" : correlationId);
+                .addSDParam("partition_key", partitionKey == null ? "" : partitionKey);
+        //.addSDParam("correlation_id", correlationId == null ? "" : correlationId);
         props.forEach((key, value) -> sdEvent.addSDParam("property_" + key, value.toString()));
         /*
         // TODO add this too as SDElement
@@ -240,7 +219,7 @@ final class EventDataConsumer implements AutoCloseable {
                 .withSDElement(sdPartition)
                 .withSDElement(sdEvent)
                 //.withSDElement(sdCorId)
-                .withMsgId(String.valueOf(sequenceNumber))
+                .withMsgId(String.valueOf(systemProps.getOrDefault("SequenceNumber", "0")))
                 .withMsg(eventData);
 
         output.accept(syslogMessage.toRfc5424SyslogMessage().getBytes(StandardCharsets.UTF_8));
@@ -251,6 +230,5 @@ final class EventDataConsumer implements AutoCloseable {
         output.close();
         slf4jReporter.close();
         jmxReporter.close();
-        jettyServer.stop();
     }
 }

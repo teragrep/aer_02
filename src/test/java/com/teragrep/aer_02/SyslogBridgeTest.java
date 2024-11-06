@@ -50,25 +50,17 @@ import com.teragrep.net_01.eventloop.EventLoop;
 import com.teragrep.net_01.eventloop.EventLoopFactory;
 import com.teragrep.net_01.server.Server;
 import com.teragrep.net_01.server.ServerFactory;
-import com.azure.messaging.eventhubs.models.PartitionContext;
-import com.microsoft.azure.functions.ExecutionContext;
-import com.teragrep.rlo_06.RFC5424Frame;
 import com.teragrep.rlp_03.frame.FrameDelegationClockFactory;
 import com.teragrep.rlp_03.frame.delegate.DefaultFrameDelegate;
 import com.teragrep.rlp_03.frame.delegate.FrameContext;
 import com.teragrep.rlp_03.frame.delegate.FrameDelegate;
 import org.junit.jupiter.api.*;
 
-import java.io.ByteArrayInputStream;
-import java.nio.charset.StandardCharsets;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-import java.util.logging.Logger;
 
 /**
  * Unit test for SyslogBridge class.
@@ -121,7 +113,7 @@ public final class SyslogBridgeTest {
     @Disabled(value = "array stuff")
     @Test
     void testSyslogBridge() {
-      /*  Map<String, Object> props = new HashMap<>();
+        /*  Map<String, Object> props = new HashMap<>();
         props.put("messageId", "123");
         props.put("correlationId", "321");
         Map<String, Object> systemProps = new HashMap<>();
@@ -132,26 +124,26 @@ public final class SyslogBridgeTest {
         final SyslogBridge bridge = new SyslogBridge();
         bridge
                 .eventHubTriggerToSyslog(Collections.singletonList("event0").toArray(new String[0]), new ExecutionContext() {
-
+        
                     @Override
                     public Logger getLogger() {
                         return Logger.getLogger(SyslogBridgeTest.class.getName());
                     }
-
+        
                     @Override
                     public String getInvocationId() {
                         return "12345";
                     }
-
+        
                     @Override
                     public String getFunctionName() {
                         return "eventHubTriggerToSyslog";
                     }
                 }, new PartitionContext("namespace", "eventHubName", "$Default", "1")
                 , Collections.singletonList(props), Collections.singletonList(systemProps), Collections.singletonList(zdt), Collections.singletonList(offset), Collections.singletonList(partitionKey), Collections.singletonList(seqNum) );
-
+        
         Assertions.assertEquals(1, messages.size());
-
+        
         int loops = 0;
         for (String message : messages) {
             final RFC5424Frame frame = new RFC5424Frame(false);
@@ -161,7 +153,7 @@ public final class SyslogBridgeTest {
             Assertions.assertEquals("aer-02", frame.appName.toString());
             loops++;
         }
-
+        
         Assertions.assertEquals(1, loops); */
     }
 }

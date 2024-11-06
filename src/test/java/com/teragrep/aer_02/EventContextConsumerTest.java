@@ -60,7 +60,6 @@ import org.junit.jupiter.api.TestInstance;
 
 import java.time.Instant;
 import java.time.ZonedDateTime;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -75,10 +74,14 @@ public class EventContextConsumerTest {
     @Disabled(value = "not implemented")
     @Test
     public void testLatencyMetric() {
+        Map<String, Object> partitionContext = new HashMap<>();
+        partitionContext.put("FullyQualifiedNamespace", "eventhub.123");
+        partitionContext.put("EventHubName", "test1");
+        partitionContext.put("ConsumerGroup", "$Default");
+        partitionContext.put("PartitionId", "0");
         Map<String, Object> props = new HashMap<>();
-        props.put("messageId", "123");
-        props.put("correlationId", "321");
         Map<String, Object> systemProps = new HashMap<>();
+        systemProps.put("SequenceNumber", "1");
         MetricRegistry metricRegistry = new MetricRegistry();
         EventDataConsumer eventDataConsumer = new EventDataConsumer(
                 configSource,
@@ -89,14 +92,11 @@ public class EventContextConsumerTest {
 
         final double records = 10;
         for (int i = 0; i < records; i++) {
-            PartitionContext partitionContext;
-            if (i < 5) {
-                partitionContext = new PartitionContext("namespace", "hub", "consumer", "1");
+            if (i >= 5) {
+                partitionContext.put("PartitionId", "1");
             }
-            else {
-                partitionContext = new PartitionContext("namespace", "hub", "consumer", "2");
-            }
-            eventDataConsumer.accept("event", partitionContext, ZonedDateTime.now(), "0", "0", 0L, props, systemProps);
+            eventDataConsumer
+                    .accept("event", partitionContext, ZonedDateTime.now(), String.valueOf(i), props, systemProps);
         }
 
         Assertions.assertDoesNotThrow(eventDataConsumer::close);
@@ -104,8 +104,8 @@ public class EventContextConsumerTest {
         long latency = Instant.now().getEpochSecond();
 
         // 5 records for each partition
-        Gauge<Long> gauge1 = metricRegistry.gauge(name(EventDataConsumer.class, "latency-seconds", "1"));
-        Gauge<Long> gauge2 = metricRegistry.gauge(name(EventDataConsumer.class, "latency-seconds", "2"));
+        Gauge<Long> gauge1 = metricRegistry.gauge(name(EventDataConsumer.class, "latency-seconds", "0"));
+        Gauge<Long> gauge2 = metricRegistry.gauge(name(EventDataConsumer.class, "latency-seconds", "1"));
 
         // hard to test the exact correct latency
         Assertions.assertTrue(gauge1.getValue() >= latency);
@@ -129,8 +129,7 @@ public class EventContextConsumerTest {
                 prometheusPort
         );
         PartitionContext partitionContext = new PartitionContext("namespace", "hub", "consumer", "1");
-        eventDataConsumer.accept("event", partitionContext, ZonedDateTime.now(), "0", "0", 0L, new HashMap<>(), new HashMap<>());
-
+        //eventDataConsumer.accept("event", partitionContext, ZonedDateTime.now(), "0", "0", 0L, new HashMap<>(), new HashMap<>());
 
         for (int i = 1; i < records; i++) { // records - 1 loops
             if (i == 5) { // 5 records per partition
@@ -155,10 +154,14 @@ public class EventContextConsumerTest {
     @Test
     @Disabled(value = "not implemented")
     public void testEstimatedDataDepthMetric() {
+        Map<String, Object> partitionContext = new HashMap<>();
+        partitionContext.put("FullyQualifiedNamespace", "eventhub.123");
+        partitionContext.put("EventHubName", "test1");
+        partitionContext.put("ConsumerGroup", "$Default");
+        partitionContext.put("PartitionId", "0");
         Map<String, Object> props = new HashMap<>();
-        props.put("messageId", "123");
-        props.put("correlationId", "321");
         Map<String, Object> systemProps = new HashMap<>();
+        systemProps.put("SequenceNumber", "1");
         MetricRegistry metricRegistry = new MetricRegistry();
         EventDataConsumer eventDataConsumer = new EventDataConsumer(
                 configSource,
@@ -172,14 +175,8 @@ public class EventContextConsumerTest {
         for (int i = 0; i < records; i++) {
             EventData data = new EventDataFake();
             length = length + data.getBody().length;
-            PartitionContext partitionContext;
-            if (i < 5) {
-                partitionContext = new PartitionContext("namespace", "hub", "consumer", "1");
-            }
-            else {
-                partitionContext = new PartitionContext("namespace", "hub", "consumer", "2");
-            }
-            eventDataConsumer.accept(data.getBodyAsString(), partitionContext, ZonedDateTime.now(), "0", "0", 0L, props, systemProps);
+            eventDataConsumer
+                    .accept(data.getBodyAsString(), partitionContext, ZonedDateTime.now(), String.valueOf(i), props, systemProps);
 
         }
 
