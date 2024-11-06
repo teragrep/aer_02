@@ -45,8 +45,6 @@
  */
 package com.teragrep.aer_02;
 
-import com.azure.messaging.eventhubs.EventData;
-import com.azure.messaging.eventhubs.models.PartitionContext;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;
 import com.teragrep.aer_02.config.MetricsConfig;
@@ -54,11 +52,9 @@ import com.teragrep.aer_02.config.source.PropertySource;
 import com.teragrep.aer_02.config.source.Sourceable;
 import com.teragrep.aer_02.fakes.*;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 
-import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.HashMap;
 import java.util.Map;
@@ -71,7 +67,6 @@ public class EventContextConsumerTest {
     private final Sourceable configSource = new PropertySource();
     private final int prometheusPort = new MetricsConfig(configSource).prometheusPort;
 
-    @Disabled(value = "not implemented")
     @Test
     public void testLatencyMetric() {
         Map<String, Object> partitionContext = new HashMap<>();
@@ -96,95 +91,16 @@ public class EventContextConsumerTest {
                 partitionContext.put("PartitionId", "1");
             }
             eventDataConsumer
-                    .accept("event", partitionContext, ZonedDateTime.now(), String.valueOf(i), props, systemProps);
+                    .accept("event", partitionContext, ZonedDateTime.now().minusSeconds(10), String.valueOf(i), props, systemProps);
         }
 
         Assertions.assertDoesNotThrow(eventDataConsumer::close);
-
-        long latency = Instant.now().getEpochSecond();
 
         // 5 records for each partition
         Gauge<Long> gauge1 = metricRegistry.gauge(name(EventDataConsumer.class, "latency-seconds", "0"));
         Gauge<Long> gauge2 = metricRegistry.gauge(name(EventDataConsumer.class, "latency-seconds", "1"));
 
-        // hard to test the exact correct latency
-        Assertions.assertTrue(gauge1.getValue() >= latency);
-        Assertions.assertTrue(gauge2.getValue() >= latency);
-    }
-
-    @Disabled(value = "depth-bytes metric not implemented")
-    @Test
-    public void testDepthBytesMetric() {
-        //EventContextFactory eventContextFactory = new CheckpointlessEventContextFactory();
-        MetricRegistry metricRegistry = new MetricRegistry();
-
-        long depth1 = 0L;
-        final double records = 10;
-        EventData eventData = new EventDataFake();
-
-        EventDataConsumer eventDataConsumer = new EventDataConsumer(
-                configSource,
-                new OutputFake(),
-                metricRegistry,
-                prometheusPort
-        );
-        PartitionContext partitionContext = new PartitionContext("namespace", "hub", "consumer", "1");
-        //eventDataConsumer.accept("event", partitionContext, ZonedDateTime.now(), "0", "0", 0L, new HashMap<>(), new HashMap<>());
-
-        for (int i = 1; i < records; i++) { // records - 1 loops
-            if (i == 5) { // 5 records per partition
-                //depth1 = eventContext.getLastEnqueuedEventProperties().getOffset() - eventContext.getEventData().getOffset();
-            }
-
-            //eventContextConsumer.accept(eventContext);
-        }
-
-        //Assertions.assertDoesNotThrow(eventContextConsumer::close);
-
-        //long depth2 = eventContext.getLastEnqueuedEventProperties().getOffset() - eventContext.getEventData().getOffset();
-        //Gauge<Long> gauge1 = metricRegistry.gauge(name(EventContextConsumer.class, "depth-bytes", "1"));
-        //Gauge<Long> gauge2 = metricRegistry.gauge(name(EventContextConsumer.class, "depth-bytes", "2"));
-
-        //Assertions.assertEquals(depth1, 99L); // offsets are defined in the factory
-        //Assertions.assertEquals(depth2, 99L);
-        //Assertions.assertEquals(depth1, gauge1.getValue());
-        //Assertions.assertEquals(depth2, gauge2.getValue());
-    }
-
-    @Test
-    @Disabled(value = "not implemented")
-    public void testEstimatedDataDepthMetric() {
-        Map<String, Object> partitionContext = new HashMap<>();
-        partitionContext.put("FullyQualifiedNamespace", "eventhub.123");
-        partitionContext.put("EventHubName", "test1");
-        partitionContext.put("ConsumerGroup", "$Default");
-        partitionContext.put("PartitionId", "0");
-        Map<String, Object> props = new HashMap<>();
-        Map<String, Object> systemProps = new HashMap<>();
-        systemProps.put("SequenceNumber", "1");
-        MetricRegistry metricRegistry = new MetricRegistry();
-        EventDataConsumer eventDataConsumer = new EventDataConsumer(
-                configSource,
-                new OutputFake(),
-                metricRegistry,
-                prometheusPort
-        );
-
-        final double records = 10;
-        long length = 0L;
-        for (int i = 0; i < records; i++) {
-            EventData data = new EventDataFake();
-            length = length + data.getBody().length;
-            eventDataConsumer
-                    .accept(data.getBodyAsString(), partitionContext, ZonedDateTime.now(), String.valueOf(i), props, systemProps);
-
-        }
-
-        Assertions.assertDoesNotThrow(eventDataConsumer::close);
-
-        Gauge<Long> gauge = metricRegistry.gauge(MetricRegistry.name(EventDataConsumer.class, "estimated-data-depth"));
-        Double estimatedDepth = (length / records) / records;
-
-        Assertions.assertEquals(estimatedDepth, gauge.getValue());
+        Assertions.assertEquals(gauge1.getValue(), 10);
+        Assertions.assertEquals(gauge2.getValue(), 10);
     }
 }

@@ -99,14 +99,6 @@ public class SyslogBridge {
             @BindingName("OffsetArray") List<String> offsetArray,
             ExecutionContext context
     ) {
-
-        context.getLogger().info("Java Event Hub trigger received " + events.length + " messages");
-        context.getLogger().info("message[0]=" + events[0]);
-        context.getLogger().info("PartitionContext for message[0]=" + partitionContext);
-        context.getLogger().info("Properties for message[0]=" + propertiesArray[0]);
-        context.getLogger().info("SystemProperties for message[0]=" + systemPropertiesArray[0]);
-        context.getLogger().info("EnqueuedTimeUtc for message[0]=" + enqueuedTimeUtcArray.get(0));
-        context.getLogger().info("Offset for message[0]=" + offsetArray.get(0));
         context.getLogger().fine("eventHubTriggerToSyslog triggered");
         context.getLogger().fine("Got events: " + events.length);
 
@@ -120,7 +112,7 @@ public class SyslogBridge {
         for (int index = 0; index < events.length; index++) {
             if (events[index] != null) {
                 final ZonedDateTime et = ZonedDateTime.parse(enqueuedTimeUtcArray.get(index) + "Z"); // needed as the UTC time presented does not have a TZ
-                context.getLogger().info("Accepting event: " + events[index]);
+                context.getLogger().fine("Accepting event: " + events[index]);
                 consumer
                         .accept(events[index], partitionContext, et, offsetArray.get(index), propertiesArray[index], systemPropertiesArray[index]);
             }

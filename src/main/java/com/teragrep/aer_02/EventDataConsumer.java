@@ -66,7 +66,6 @@ import java.time.ZonedDateTime;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
 
 import static com.codahale.metrics.MetricRegistry.name;
 
@@ -79,10 +78,6 @@ final class EventDataConsumer implements AutoCloseable {
     private final MetricRegistry metricRegistry;
     private final JmxReporter jmxReporter;
     private final Slf4jReporter slf4jReporter;
-
-    // metrics
-    private final AtomicLong records = new AtomicLong();
-    private final AtomicLong allSize = new AtomicLong();
 
     EventDataConsumer(Sourceable configSource, int prometheusPort) {
         this(configSource, new MetricRegistry(), prometheusPort);
@@ -111,9 +106,6 @@ final class EventDataConsumer implements AutoCloseable {
                 .convertDurationsTo(TimeUnit.MILLISECONDS)
                 .build();
         startMetrics();
-
-        metricRegistry
-                .register(name(EventDataConsumer.class, "estimated-data-depth"), (Gauge<Double>) () -> (allSize.get() / records.doubleValue()) / records.doubleValue());
     }
 
     private String getRealHostName() {
@@ -143,12 +135,8 @@ final class EventDataConsumer implements AutoCloseable {
             Map<String, Object> props,
             Map<String, Object> systemProps
     ) {
-        int messageLength = eventData.length();
+
         String partitionId = String.valueOf(partitionContext.get("PartitionId"));
-
-        records.incrementAndGet();
-        allSize.addAndGet(messageLength);
-
         metricRegistry.gauge(name(EventDataConsumer.class, "latency-seconds", partitionId), () -> new Gauge<Long>() {
 
             @Override
@@ -156,17 +144,8 @@ final class EventDataConsumer implements AutoCloseable {
                 return Instant.now().getEpochSecond() - enqueuedTime.toInstant().getEpochSecond();
             }
         });
-        metricRegistry.gauge(name(EventDataConsumer.class, "depth-bytes", partitionId), () -> new Gauge<Long>() {
 
-            @Override
-            public Long getValue() {
-                // TODO:
-                //return eventContext.getLastEnqueuedEventProperties().getOffset() - eventData.getOffset();
-                return 0L;
-            }
-        });
-
-        String eventUuid = null;//TODO: check if correct
+        String eventUuid = null; //TODO: Message id not available?
 
         // FIXME proper handling of non-provided uuids
         if (eventUuid == null) {
@@ -189,26 +168,16 @@ final class EventDataConsumer implements AutoCloseable {
                 .addSDParam("consumer_group", String.valueOf(partitionContext.getOrDefault("ConsumerGroup", "")));
 
         String partitionKey = String.valueOf(systemProps.getOrDefault("PartitionKey", ""));
-        // String correlationId = props.get("correlationId").toString(); //TODO: same here
+
+        // TODO: Correlation id not available?
+        // String correlationId = props.get("correlationId").toString();
         SDElement sdEvent = new SDElement("aer_01_event@48577")
                 .addSDParam("offset", offset == null ? "" : offset)
                 .addSDParam("enqueued_time", enqueuedTime == null ? "" : enqueuedTime.toString())
                 .addSDParam("partition_key", partitionKey == null ? "" : partitionKey);
         //.addSDParam("correlation_id", correlationId == null ? "" : correlationId);
         props.forEach((key, value) -> sdEvent.addSDParam("property_" + key, value.toString()));
-        /*
-        // TODO add this too as SDElement
-        SDElement sdCorId = new SDElement("id@123").addSDParam("corId", eventData.getCorrelationId());
-        
-        // TODO metrics about these vs last retrieved, these are tracked per partition!:
-        eventContext.getLastEnqueuedEventProperties().getEnqueuedTime();
-        eventContext.getLastEnqueuedEventProperties().getSequenceNumber();
-        eventContext.getLastEnqueuedEventProperties().getRetrievalTime(); // null if not retrieved
-        
-        // TODO compare these to above
-        eventData.getPartitionKey();
-        eventData.getProperties();
-        */
+
         SyslogMessage syslogMessage = new SyslogMessage()
                 .withSeverity(Severity.INFORMATIONAL)
                 .withFacility(Facility.LOCAL0)

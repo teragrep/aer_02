@@ -45,35 +45,20 @@
  */
 package com.teragrep.aer_02.fakes;
 
-import com.azure.messaging.eventhubs.EventData;
+import java.util.HashMap;
+import java.util.Map;
 
-import java.nio.charset.StandardCharsets;
-import java.time.Instant;
+public class SystemPropsFake {
 
-public class EventDataFake extends EventData {
+    private final String sequenceNumber;
 
-    @Override
-    public byte[] getBody() {
-        return "foo".getBytes(StandardCharsets.UTF_8);
+    public SystemPropsFake(String sequenceNumber) {
+        this.sequenceNumber = sequenceNumber;
     }
 
-    @Override
-    public Long getOffset() {
-        return 1L;
-    }
-
-    @Override
-    public String getPartitionKey() {
-        return "key";
-    }
-
-    @Override
-    public Instant getEnqueuedTime() {
-        return Instant.ofEpochSecond(0);
-    }
-
-    @Override
-    public Long getSequenceNumber() {
-        return 1L;
+    public Map<String, Object> asMap() {
+        final Map<String, Object> m = new HashMap<String, Object>();
+        m.put("SequenceNumber", sequenceNumber);
+        return m;
     }
 }
