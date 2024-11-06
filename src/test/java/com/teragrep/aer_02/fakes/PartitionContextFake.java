@@ -64,10 +64,10 @@ public class PartitionContextFake {
 
     public Map<String, Object> asMap() {
         final Map<String, Object> m = new HashMap<>();
-        m.put("FullyQualifiedNamespace", "eventhub.123");
-        m.put("EventHubName", "test1");
-        m.put("ConsumerGroup", "$Default");
-        m.put("PartitionId", "0");
+        m.put("FullyQualifiedNamespace", namespace);
+        m.put("EventHubName", eventHubName);
+        m.put("ConsumerGroup", consumerGroup);
+        m.put("PartitionId", partitionId);
         return m;
     }
 }
