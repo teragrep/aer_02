@@ -122,7 +122,7 @@ public class SyslogBridge {
                 final ZonedDateTime et = ZonedDateTime.parse(enqueuedTimeUtcArray.get(index) + "Z"); // needed as the UTC time presented does not have a TZ
                 context.getLogger().info("Accepting event: " + events[index]);
                 consumer
-                        .accept(events[index], partitionContext, et, offsetArray.get(index), propertiesArray[0], systemPropertiesArray[0]);
+                        .accept(events[index], partitionContext, et, offsetArray.get(index), propertiesArray[index], systemPropertiesArray[index]);
             }
             else {
                 context.getLogger().warning("eventHubTriggerToSyslog event data is null");
