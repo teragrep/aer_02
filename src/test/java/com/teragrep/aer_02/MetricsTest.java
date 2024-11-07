@@ -58,7 +58,7 @@ import org.junit.jupiter.api.Test;
 import java.net.URI;
 import java.util.*;
 
-public class MetricsHttpTest {
+public class MetricsTest {
 
     private final MetricRegistry registry = new MetricRegistry();
 
@@ -113,7 +113,7 @@ public class MetricsHttpTest {
             }
         };
 
-        HttpResponseMessage resp = bridge.metricsHttp(req, new ExecutionContextFake());
+        HttpResponseMessage resp = bridge.metrics(req, new ExecutionContextFake());
         List<String> responseLines = Arrays.asList(resp.getBody().toString().split("\n"));
 
         Assertions.assertEquals(3, responseLines.size());

@@ -61,8 +61,8 @@ public class SyslogBridge {
 
     private EventDataConsumer consumer = null;
 
-    @FunctionName("metricsHttp")
-    public HttpResponseMessage metricsHttp(
+    @FunctionName("metrics")
+    public HttpResponseMessage metrics(
             @HttpTrigger(
                     name = "req",
                     methods = {
@@ -72,7 +72,7 @@ public class SyslogBridge {
             ) HttpRequestMessage<Optional<String>> request,
             final ExecutionContext context
     ) {
-        context.getLogger().fine("MetricsHttp triggered");
+        context.getLogger().fine("Metrics HTTP trigger was triggered");
         String contentType = TextFormat.chooseContentType(request.getHeaders().get("Accept"));
 
         String body;
