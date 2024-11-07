@@ -1,4 +1,3 @@
-<!--
 /*
  * Teragrep Eventhub Reader as an Azure Function
  * Copyright (C) 2024 Suomen Kanuuna Oy
@@ -43,25 +42,43 @@
  * To the extent this program is licensed as part of the Commercial versions of
  * Teragrep, the applicable Commercial License may apply to this file if you as
  * a licensee so wish it.
- */-->
-<assembly xmlns="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.0"
-          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-          xsi:schemaLocation="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.0 http://maven.apache.org/xsd/assembly-1.1.0.xsd">
-  <id>jar-with-dependencies</id>
-  <formats>
-    <format>jar</format>
-  </formats>
-  <includeBaseDirectory>false</includeBaseDirectory>
-  <containerDescriptorHandlers>
-    <containerDescriptorHandler>
-      <handlerName>metaInf-services</handlerName>
-    </containerDescriptorHandler>
-  </containerDescriptorHandlers>
-  <dependencySets>
-    <dependencySet>
-      <useProjectArtifact>true</useProjectArtifact>
-      <unpack>true</unpack>
-      <scope>runtime</scope>
-    </dependencySet>
-  </dependencySets>
-</assembly>
+ */
+package com.teragrep.aer_02;
+
+import com.teragrep.aer_02.config.AzureConfig;
+import com.teragrep.aer_02.config.RelpConfig;
+import com.teragrep.aer_02.config.SyslogConfig;
+import com.teragrep.aer_02.config.source.EnvironmentSource;
+import com.teragrep.aer_02.config.source.PropertySource;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+
+public class ConfigTest {
+
+    @Disabled(value = "fix maven")
+    @Test
+    public void testConfigFromEnv() {
+        AzureConfig azureConfig = new AzureConfig(new EnvironmentSource()); // AZURE_NAMESPACE comes from maven
+        Assertions
+                .assertEquals(
+                        "azure_namespace_from_env", azureConfig.namespaceName,
+                        "Expected to get config from environment variable"
+                );
+    }
+
+    @Test
+    public void testConfigFromProperty() {
+        String expected = "testing.hostname.example.com";
+        System.setProperty("syslog.hostname", expected);
+        SyslogConfig syslogConfig = new SyslogConfig(new PropertySource());
+        Assertions.assertEquals(expected, syslogConfig.hostname, "Expected to get config from property");
+        System.clearProperty("syslog.hostname");
+    }
+
+    @Test
+    public void testConfigFallback() {
+        RelpConfig relpConfig = new RelpConfig(new EnvironmentSource());
+        Assertions.assertEquals(1601, relpConfig.destinationPort, "Expected to get fallback value");
+    }
+}

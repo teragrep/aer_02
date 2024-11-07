@@ -1,4 +1,3 @@
-<!--
 /*
  * Teragrep Eventhub Reader as an Azure Function
  * Copyright (C) 2024 Suomen Kanuuna Oy
@@ -43,25 +42,30 @@
  * To the extent this program is licensed as part of the Commercial versions of
  * Teragrep, the applicable Commercial License may apply to this file if you as
  * a licensee so wish it.
- */-->
-<assembly xmlns="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.0"
-          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-          xsi:schemaLocation="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.0 http://maven.apache.org/xsd/assembly-1.1.0.xsd">
-  <id>jar-with-dependencies</id>
-  <formats>
-    <format>jar</format>
-  </formats>
-  <includeBaseDirectory>false</includeBaseDirectory>
-  <containerDescriptorHandlers>
-    <containerDescriptorHandler>
-      <handlerName>metaInf-services</handlerName>
-    </containerDescriptorHandler>
-  </containerDescriptorHandlers>
-  <dependencySets>
-    <dependencySet>
-      <useProjectArtifact>true</useProjectArtifact>
-      <unpack>true</unpack>
-      <scope>runtime</scope>
-    </dependencySet>
-  </dependencySets>
-</assembly>
+ */
+package com.teragrep.aer_02.fakes;
+
+import java.io.IOException;
+
+/**
+ * Fake that throws an exception when connecting until the amount of connect attempts reach the given limit.
+ */
+public class ThrowingRelpConnectionFake extends RelpConnectionFake {
+
+    private final int limit;
+    private int timesConnected = 0;
+
+    public ThrowingRelpConnectionFake(int limit) {
+        super();
+        this.limit = limit;
+    }
+
+    @Override
+    public boolean connect(String hostname, int port) throws IOException, IllegalStateException {
+        timesConnected++;
+        if (timesConnected < limit) {
+            throw new IOException("Fake exception");
+        }
+        return super.connect(hostname, port);
+    }
+}
