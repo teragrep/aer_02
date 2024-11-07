@@ -50,35 +50,42 @@ import com.microsoft.azure.functions.*;
 import com.teragrep.aer_02.config.MetricsConfig;
 import com.teragrep.aer_02.config.source.EnvironmentSource;
 import com.teragrep.aer_02.config.source.Sourceable;
+import io.prometheus.client.CollectorRegistry;
+import io.prometheus.client.exporter.common.TextFormat;
 
+import java.io.*;
 import java.time.ZonedDateTime;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class SyslogBridge {
 
     private EventDataConsumer consumer = null;
 
-    /* @FunctionName("metricsHttp")
-    public HttpResponseMessage metricsHttp(@HttpTrigger(name="req", methods = {HttpMethod.GET, HttpMethod.POST}, authLevel = AuthorizationLevel.ANONYMOUS) HttpRequestMessage<Optional<String>> request, final ExecutionContext context) {
-        EmbeddedRequest embeddedRequest = new EmbeddedRequestBuilder().method("GET").servletPath("/metrics").build();
-        EmbeddedResponse embeddedResponse = new EmbeddedResponse();
-    
-        String body = null;
-        EmbeddedPiranha embeddedPiranha = new EmbeddedPiranhaBuilder().servlet("MetricsServlet", MetricsServlet.class).build();
-        try {
-            embeddedPiranha.service(embeddedRequest, embeddedResponse);
-        } catch (IOException | ServletException e) {
-            body = e.getMessage();
+    @FunctionName("metricsHttp")
+    public HttpResponseMessage metricsHttp(
+            @HttpTrigger(
+                    name = "req",
+                    methods = {
+                            HttpMethod.GET, HttpMethod.POST
+                    },
+                    authLevel = AuthorizationLevel.ANONYMOUS
+            ) HttpRequestMessage<Optional<String>> request,
+            final ExecutionContext context
+    ) {
+        context.getLogger().fine("MetricsHttp triggered");
+        String contentType = TextFormat.chooseContentType(request.getHeaders().get("Accept"));
+
+        String body;
+        try (Writer writer = new StringWriter()) {
+            TextFormat.writeFormat(contentType, writer, CollectorRegistry.defaultRegistry.metricFamilySamples());
+            body = writer.toString();
         }
-    
-        if (body == null) {
-            body = embeddedResponse.getResponseAsString();
+        catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
-    
-        return request.createResponseBuilder(HttpStatus.OK).body(body).build();
-    
-    } */
+
+        return request.createResponseBuilder(HttpStatus.OK).body(body).header("Accept", contentType).build();
+    }
 
     @FunctionName("eventHubTriggerToSyslog")
     public void eventHubTriggerToSyslog(
