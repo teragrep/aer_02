@@ -12,8 +12,8 @@
     <changelist>-SNAPSHOT</changelist>
     <functionAppName>aer_02-20241015142323079</functionAppName>
     <java.version>11</java.version>
-    <maven.compiler.source>1.8</maven.compiler.source>
-    <maven.compiler.target>1.8</maven.compiler.target>
+    <maven.compiler.source>11</maven.compiler.source>
+    <maven.compiler.target>11</maven.compiler.target>
     <metrics.version>4.2.8</metrics.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
