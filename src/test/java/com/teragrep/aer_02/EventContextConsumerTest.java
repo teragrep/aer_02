@@ -49,7 +49,7 @@ import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;
 import com.teragrep.aer_02.config.source.PropertySource;
 import com.teragrep.aer_02.config.source.Sourceable;
-import com.teragrep.aer_02.fakes.*;
+import com.teragrep.aer_02.fakes.OutputFake;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;

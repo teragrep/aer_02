@@ -47,71 +47,81 @@ package com.teragrep.aer_02.config;
 
 import com.teragrep.aer_02.config.source.Sourceable;
 
-// copy from snw_01 with fixes
 public final class RelpConfig {
 
-    public final Sourceable configSource;
-    public final int connectionTimeout;
-    public final int readTimeout;
-    public final int writeTimeout;
-    public final int reconnectInterval;
-    public final int destinationPort;
-    public final String destinationAddress;
+    private final int connectTimeout;
+    private final int readTimeout;
+    private final int writeTimeout;
+    private final int reconnectInterval;
+    private final int port;
+    private final String address;
 
-    public RelpConfig(Sourceable configSource) {
-        this.configSource = configSource;
-        this.connectionTimeout = getConnectTimeout();
-        this.readTimeout = getReadTimeout();
-        this.writeTimeout = getWriteTimeout();
-        this.reconnectInterval = getReconnectInterval();
-        this.destinationPort = getRelpPort();
-        this.destinationAddress = getRelpAddress();
+    public RelpConfig(final Sourceable configSource) {
+        this(
+                Integer.parseInt(configSource.source("relp.connection.timeout", "5000")),
+                Integer.parseInt(configSource.source("relp.transaction.read.timeout", "5000")),
+                Integer.parseInt(configSource.source("relp.transaction.write.timeout", "5000")),
+                Integer.parseInt(configSource.source("relp.connection.retry.interval", "5000")),
+                Integer.parseInt(configSource.source("relp.connection.port", "601")),
+                configSource.source("relp.connection.address", "localhost")
+        );
+    }
+
+    public RelpConfig(
+            final int connectTimeout,
+            final int readTimeout,
+            final int writeTimeout,
+            final int reconnectInt,
+            final int port,
+            final String addr
+    ) {
+        this.connectTimeout = connectTimeout;
+        this.readTimeout = readTimeout;
+        this.writeTimeout = writeTimeout;
+        this.reconnectInterval = reconnectInt;
+        this.port = port;
+        this.address = addr;
     }
 
     /**
      * @return relp.connection.timeout
      */
-    private int getConnectTimeout() {
-        String connectTimeout = configSource.source("relp.connection.timeout", "5000");
-        return Integer.parseInt(connectTimeout);
+    public int connectTimeout() {
+        return connectTimeout;
     }
 
     /**
      * @return relp.transaction.read.timeout
      */
-    private int getReadTimeout() {
-        String rto = configSource.source("relp.transaction.read.timeout", "5000");
-        return Integer.parseInt(rto);
+    public int readTimeout() {
+        return readTimeout;
     }
 
     /**
      * @return relp.transaction.write.timeout
      */
-    private int getWriteTimeout() {
-        String wto = configSource.source("relp.transaction.write.timeout", "5000");
-        return Integer.parseInt(wto);
+    public int writeTimeout() {
+        return writeTimeout;
     }
 
     /**
      * @return relp.connection.retry.interval
      */
-    private int getReconnectInterval() {
-        String reconnectString = configSource.source("relp.connection.retry.interval", "5000");
-        return Integer.parseInt(reconnectString);
+    public int reconnectInterval() {
+        return reconnectInterval;
     }
 
     /**
      * @return relp.connection.port
      */
-    private int getRelpPort() {
-        String relpPort = configSource.source("relp.connection.port", "601");
-        return Integer.parseInt(relpPort);
+    public int relpPort() {
+        return port;
     }
 
     /**
      * @return relp.connection.address
      */
-    private String getRelpAddress() {
-        return configSource.source("relp.connection.address", "localhost");
+    public String relpAddress() {
+        return address;
     }
 }

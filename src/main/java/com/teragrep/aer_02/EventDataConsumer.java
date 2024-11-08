@@ -45,7 +45,9 @@
  */
 package com.teragrep.aer_02;
 
-import com.codahale.metrics.*;
+import com.codahale.metrics.Gauge;
+import com.codahale.metrics.MetricRegistry;
+import com.codahale.metrics.Slf4jReporter;
 import com.codahale.metrics.jmx.JmxReporter;
 import com.teragrep.aer_02.config.RelpConfig;
 import com.teragrep.aer_02.config.SyslogConfig;
@@ -181,8 +183,8 @@ final class EventDataConsumer implements AutoCloseable {
                 .withSeverity(Severity.INFORMATIONAL)
                 .withFacility(Facility.LOCAL0)
                 .withTimestamp(enqueuedTime.toInstant())
-                .withHostname(syslogConfig.hostname)
-                .withAppName(syslogConfig.appName)
+                .withHostname(syslogConfig.hostName())
+                .withAppName(syslogConfig.appName())
                 .withSDElement(sdId)
                 .withSDElement(sdPartition)
                 .withSDElement(sdEvent)

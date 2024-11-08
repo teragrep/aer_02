@@ -100,14 +100,14 @@ final class DefaultOutput implements Output {
             Reservoir sendReservoir,
             Reservoir connectReservoir
     ) {
-        this.relpAddress = relpConfig.destinationAddress;
-        this.relpPort = relpConfig.destinationPort;
-        this.reconnectInterval = relpConfig.reconnectInterval;
+        this.relpAddress = relpConfig.relpAddress();
+        this.relpPort = relpConfig.relpPort();
+        this.reconnectInterval = relpConfig.reconnectInterval();
 
         this.relpConnection = relpConnection;
-        this.relpConnection.setConnectionTimeout(relpConfig.connectionTimeout);
-        this.relpConnection.setReadTimeout(relpConfig.readTimeout);
-        this.relpConnection.setWriteTimeout(relpConfig.writeTimeout);
+        this.relpConnection.setConnectionTimeout(relpConfig.connectTimeout());
+        this.relpConnection.setReadTimeout(relpConfig.readTimeout());
+        this.relpConnection.setWriteTimeout(relpConfig.writeTimeout());
 
         this.records = metricRegistry.counter(name(DefaultOutput.class, "<[" + name + "]>", "records"));
         this.bytes = metricRegistry.counter(name(DefaultOutput.class, "<[" + name + "]>", "bytes"));
