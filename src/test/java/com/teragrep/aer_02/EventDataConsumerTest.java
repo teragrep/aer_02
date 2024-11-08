@@ -61,7 +61,7 @@ import java.util.Map;
 import static com.codahale.metrics.MetricRegistry.name;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-public class EventContextConsumerTest {
+public class EventDataConsumerTest {
 
     private final Sourceable configSource = new PropertySource();
 
@@ -76,7 +76,12 @@ public class EventContextConsumerTest {
         Map<String, Object> systemProps = new HashMap<>();
         systemProps.put("SequenceNumber", "1");
         MetricRegistry metricRegistry = new MetricRegistry();
-        EventDataConsumer eventDataConsumer = new EventDataConsumer(configSource, new OutputFake(), metricRegistry);
+        EventDataConsumer eventDataConsumer = new EventDataConsumer(
+                configSource,
+                new OutputFake(),
+                new Hostname("localhost").hostname(),
+                metricRegistry
+        );
 
         final double records = 10;
         for (int i = 0; i < records; i++) {
