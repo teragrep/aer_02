@@ -59,13 +59,13 @@ public class ConfigTest {
         String expected = "testing.hostname.example.com";
         System.setProperty("syslog.hostname", expected);
         SyslogConfig syslogConfig = new SyslogConfig(new PropertySource());
-        Assertions.assertEquals(expected, syslogConfig.hostname, "Expected to get config from property");
+        Assertions.assertEquals(expected, syslogConfig.hostName(), "Expected to get config from property");
         System.clearProperty("syslog.hostname");
     }
 
     @Test
     public void testConfigFallback() {
         RelpConfig relpConfig = new RelpConfig(new EnvironmentSource());
-        Assertions.assertEquals(1601, relpConfig.destinationPort, "Expected to get fallback value");
+        Assertions.assertEquals(1601, relpConfig.relpPort(), "Expected to get fallback value");
     }
 }

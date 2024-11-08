@@ -49,28 +49,32 @@ import com.teragrep.aer_02.config.source.Sourceable;
 
 public final class SyslogConfig {
 
-    // TODO this is a copy from snw_01, with configSource
-    public final Sourceable configSource;
-    public final String hostname;
-    public final String appName;
+    private final String appName;
+    private final String hostName;
 
-    public SyslogConfig(Sourceable configSource) {
-        this.configSource = configSource;
-        this.hostname = getHostname();
-        this.appName = getAppName();
+    public SyslogConfig(final Sourceable configSource) {
+        this(
+                configSource.source("syslog.appname", "aer-02"),
+                configSource.source("syslog.hostname", "localhost.localdomain")
+        );
+    }
+
+    public SyslogConfig(final String appName, final String hostName) {
+        this.appName = appName;
+        this.hostName = hostName;
     }
 
     /**
      * @return syslog.appname
      */
-    private String getAppName() {
-        return configSource.source("syslog.appname", "aer-02");
+    public String appName() {
+        return appName;
     }
 
     /**
      * @return syslog.hostname
      */
-    private String getHostname() {
-        return configSource.source("syslog.hostname", "localhost.localdomain");
+    public String hostName() {
+        return hostName;
     }
 }

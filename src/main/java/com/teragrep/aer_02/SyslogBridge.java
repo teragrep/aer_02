@@ -45,16 +45,21 @@
  */
 package com.teragrep.aer_02;
 
-import com.microsoft.azure.functions.annotation.*;
 import com.microsoft.azure.functions.*;
+import com.microsoft.azure.functions.annotation.*;
 import com.teragrep.aer_02.config.source.EnvironmentSource;
 import com.teragrep.aer_02.config.source.Sourceable;
 import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.exporter.common.TextFormat;
 
-import java.io.*;
+import java.io.IOException;
+import java.io.StringWriter;
+import java.io.UncheckedIOException;
+import java.io.Writer;
 import java.time.ZonedDateTime;
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 public class SyslogBridge {
 
