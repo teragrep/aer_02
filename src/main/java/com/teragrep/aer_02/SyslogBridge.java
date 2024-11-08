@@ -111,9 +111,7 @@ public class SyslogBridge {
 
         if (consumer == null) {
             final Sourceable configSource = new EnvironmentSource();
-            final int prometheusPort = new MetricsConfig(configSource).prometheusPort;
-
-            consumer = new EventDataConsumer(configSource, prometheusPort);
+            consumer = new EventDataConsumer(configSource);
         }
 
         for (int index = 0; index < events.length; index++) {

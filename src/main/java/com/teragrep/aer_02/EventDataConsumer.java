@@ -79,20 +79,19 @@ final class EventDataConsumer implements AutoCloseable {
     private final JmxReporter jmxReporter;
     private final Slf4jReporter slf4jReporter;
 
-    EventDataConsumer(Sourceable configSource, int prometheusPort) {
-        this(configSource, new MetricRegistry(), prometheusPort);
+    EventDataConsumer(Sourceable configSource) {
+        this(configSource, new MetricRegistry());
     }
 
-    EventDataConsumer(Sourceable configSource, MetricRegistry metricRegistry, int prometheusPort) {
+    EventDataConsumer(Sourceable configSource, MetricRegistry metricRegistry) {
         this(
                 configSource,
                 new DefaultOutput("defaultOutput", new RelpConfig(configSource), metricRegistry),
-                metricRegistry,
-                prometheusPort
+                metricRegistry
         );
     }
 
-    EventDataConsumer(Sourceable configSource, Output output, MetricRegistry metricRegistry, int prometheusPort) {
+    EventDataConsumer(Sourceable configSource, Output output, MetricRegistry metricRegistry) {
         this.metricRegistry = metricRegistry;
         this.output = output;
         this.realHostName = getRealHostName();

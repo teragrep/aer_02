@@ -65,8 +65,6 @@ import static com.codahale.metrics.MetricRegistry.name;
 public class EventContextConsumerTest {
 
     private final Sourceable configSource = new PropertySource();
-    private final int prometheusPort = new MetricsConfig(configSource).prometheusPort;
-
     @Test
     public void testLatencyMetric() {
         Map<String, Object> partitionContext = new HashMap<>();
@@ -81,8 +79,7 @@ public class EventContextConsumerTest {
         EventDataConsumer eventDataConsumer = new EventDataConsumer(
                 configSource,
                 new OutputFake(),
-                metricRegistry,
-                prometheusPort
+                metricRegistry
         );
 
         final double records = 10;

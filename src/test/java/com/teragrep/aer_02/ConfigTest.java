@@ -45,28 +45,14 @@
  */
 package com.teragrep.aer_02;
 
-import com.teragrep.aer_02.config.AzureConfig;
 import com.teragrep.aer_02.config.RelpConfig;
 import com.teragrep.aer_02.config.SyslogConfig;
 import com.teragrep.aer_02.config.source.EnvironmentSource;
 import com.teragrep.aer_02.config.source.PropertySource;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 public class ConfigTest {
-
-    @Disabled(value = "fix maven")
-    @Test
-    public void testConfigFromEnv() {
-        AzureConfig azureConfig = new AzureConfig(new EnvironmentSource()); // AZURE_NAMESPACE comes from maven
-        Assertions
-                .assertEquals(
-                        "azure_namespace_from_env", azureConfig.namespaceName,
-                        "Expected to get config from environment variable"
-                );
-    }
-
     @Test
     public void testConfigFromProperty() {
         String expected = "testing.hostname.example.com";
