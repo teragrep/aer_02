@@ -53,6 +53,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 public class ConfigTest {
+
     @Test
     public void testConfigFromProperty() {
         String expected = "testing.hostname.example.com";

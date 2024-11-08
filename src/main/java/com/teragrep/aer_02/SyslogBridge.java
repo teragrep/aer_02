@@ -47,7 +47,6 @@ package com.teragrep.aer_02;
 
 import com.microsoft.azure.functions.annotation.*;
 import com.microsoft.azure.functions.*;
-import com.teragrep.aer_02.config.MetricsConfig;
 import com.teragrep.aer_02.config.source.EnvironmentSource;
 import com.teragrep.aer_02.config.source.Sourceable;
 import io.prometheus.client.CollectorRegistry;
