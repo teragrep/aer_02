@@ -148,7 +148,7 @@ final class EventDataConsumer implements AutoCloseable {
 
         // FIXME proper handling of non-provided uuids
         if (eventUuid == null) {
-            eventUuid = "aer_01=" + UUID.randomUUID();
+            eventUuid = "aer_02=" + UUID.randomUUID();
         }
 
         SDElement sdId = new SDElement("event_id@48577")
@@ -157,7 +157,7 @@ final class EventDataConsumer implements AutoCloseable {
                 .addSDParam("unixtime", Instant.now().toString())
                 .addSDParam("id_source", "source");
 
-        SDElement sdPartition = new SDElement("aer_01_partition@48577")
+        SDElement sdPartition = new SDElement("aer_02_partition@48577")
                 .addSDParam(
                         "fully_qualified_namespace",
                         String.valueOf(partitionContext.getOrDefault("FullyQualifiedNamespace", ""))
@@ -170,7 +170,7 @@ final class EventDataConsumer implements AutoCloseable {
 
         // TODO: Correlation id not available?
         // String correlationId = props.get("correlationId").toString();
-        SDElement sdEvent = new SDElement("aer_01_event@48577")
+        SDElement sdEvent = new SDElement("aer_02_event@48577")
                 .addSDParam("offset", offset == null ? "" : offset)
                 .addSDParam("enqueued_time", enqueuedTime == null ? "" : enqueuedTime.toString())
                 .addSDParam("partition_key", partitionKey == null ? "" : partitionKey);
