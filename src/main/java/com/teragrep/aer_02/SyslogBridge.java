@@ -45,11 +45,16 @@
  */
 package com.teragrep.aer_02;
 
+import com.codahale.metrics.MetricRegistry;
 import com.microsoft.azure.functions.*;
 import com.microsoft.azure.functions.annotation.*;
 import com.teragrep.aer_02.config.source.EnvironmentSource;
-import com.teragrep.aer_02.config.source.Sourceable;
+import com.teragrep.aer_02.metrics.JmxReport;
+import com.teragrep.aer_02.metrics.PrometheusReport;
+import com.teragrep.aer_02.metrics.Report;
+import com.teragrep.aer_02.metrics.Slf4jReport;
 import io.prometheus.client.CollectorRegistry;
+import io.prometheus.client.dropwizard.DropwizardExports;
 import io.prometheus.client.exporter.common.TextFormat;
 
 import java.io.IOException;
@@ -64,6 +69,8 @@ import java.util.Optional;
 public class SyslogBridge {
 
     private EventDataConsumer consumer = null;
+    private Report report = null;
+    private MetricRegistry metricRegistry = null;
 
     @FunctionName("metrics")
     public HttpResponseMessage metrics(
@@ -113,9 +120,24 @@ public class SyslogBridge {
         context.getLogger().fine("eventHubTriggerToSyslog triggered");
         context.getLogger().fine("Got events: " + events.length);
 
+        if (metricRegistry == null) {
+            metricRegistry = new MetricRegistry();
+        }
+
+        if (report == null) {
+            report = new JmxReport(
+                    new Slf4jReport(new PrometheusReport(new DropwizardExports(metricRegistry)), metricRegistry),
+                    metricRegistry
+            );
+            report.start();
+        }
+
         if (consumer == null) {
-            final Sourceable configSource = new EnvironmentSource();
-            consumer = new EventDataConsumer(configSource);
+            consumer = new EventDataConsumer(
+                    new EnvironmentSource(),
+                    new Hostname("localhost").hostname(),
+                    metricRegistry
+            );
         }
 
         for (int index = 0; index < events.length; index++) {

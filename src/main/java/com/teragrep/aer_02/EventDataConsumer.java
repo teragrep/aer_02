@@ -47,8 +47,6 @@ package com.teragrep.aer_02;
 
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;
-import com.codahale.metrics.Slf4jReporter;
-import com.codahale.metrics.jmx.JmxReporter;
 import com.teragrep.aer_02.config.RelpConfig;
 import com.teragrep.aer_02.config.SyslogConfig;
 import com.teragrep.aer_02.config.source.Sourceable;
@@ -56,18 +54,12 @@ import com.teragrep.rlo_14.Facility;
 import com.teragrep.rlo_14.SDElement;
 import com.teragrep.rlo_14.Severity;
 import com.teragrep.rlo_14.SyslogMessage;
-import io.prometheus.client.CollectorRegistry;
-import io.prometheus.client.dropwizard.DropwizardExports;
-import org.slf4j.LoggerFactory;
 
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 
 import static com.codahale.metrics.MetricRegistry.name;
 
@@ -78,54 +70,26 @@ final class EventDataConsumer implements AutoCloseable {
     private final String realHostName;
     private final SyslogConfig syslogConfig;
     private final MetricRegistry metricRegistry;
-    private final JmxReporter jmxReporter;
-    private final Slf4jReporter slf4jReporter;
 
-    EventDataConsumer(Sourceable configSource) {
-        this(configSource, new MetricRegistry());
-    }
-
-    EventDataConsumer(Sourceable configSource, MetricRegistry metricRegistry) {
+    EventDataConsumer(final Sourceable configSource, final String hostname, final MetricRegistry metricRegistry) {
         this(
                 configSource,
                 new DefaultOutput("defaultOutput", new RelpConfig(configSource), metricRegistry),
+                hostname,
                 metricRegistry
         );
     }
 
-    EventDataConsumer(Sourceable configSource, Output output, MetricRegistry metricRegistry) {
+    EventDataConsumer(
+            final Sourceable configSource,
+            final Output output,
+            final String hostname,
+            final MetricRegistry metricRegistry
+    ) {
         this.metricRegistry = metricRegistry;
         this.output = output;
-        this.realHostName = getRealHostName();
+        this.realHostName = hostname;
         this.syslogConfig = new SyslogConfig(configSource);
-
-        this.jmxReporter = JmxReporter.forRegistry(metricRegistry).build();
-        this.slf4jReporter = Slf4jReporter
-                .forRegistry(metricRegistry)
-                .outputTo(LoggerFactory.getLogger(EventDataConsumer.class))
-                .convertRatesTo(TimeUnit.SECONDS)
-                .convertDurationsTo(TimeUnit.MILLISECONDS)
-                .build();
-        startMetrics();
-    }
-
-    private String getRealHostName() {
-        String hostname;
-        try {
-            hostname = InetAddress.getLocalHost().getHostName();
-        }
-        catch (UnknownHostException e) {
-            hostname = "localhost";
-        }
-        return hostname;
-    }
-
-    private void startMetrics() {
-        this.jmxReporter.start();
-        this.slf4jReporter.start(1, TimeUnit.MINUTES);
-
-        // prometheus-exporter
-        CollectorRegistry.defaultRegistry.register(new DropwizardExports(metricRegistry));
     }
 
     public void accept(
@@ -198,7 +162,5 @@ final class EventDataConsumer implements AutoCloseable {
     @Override
     public void close() throws Exception {
         output.close();
-        slf4jReporter.close();
-        jmxReporter.close();
     }
 }

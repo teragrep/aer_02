@@ -51,6 +51,7 @@ import com.teragrep.aer_02.fakes.ExecutionContextFake;
 import com.teragrep.aer_02.fakes.HttpResponseMessageBuilderFake;
 import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.dropwizard.DropwizardExports;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -69,10 +70,15 @@ public class MetricsTest {
         registry.counter("test-counter").inc(123);
     }
 
+    @AfterEach
+    void teardown() {
+        CollectorRegistry.defaultRegistry.clear();
+    }
+
     @Test
     void testHttp() {
         SyslogBridge bridge = new SyslogBridge();
-        HttpRequestMessage<Optional<String>> req = new HttpRequestMessage<Optional<String>>() {
+        HttpRequestMessage<Optional<String>> req = new HttpRequestMessage<>() {
 
             @Override
             public URI getUri() {
