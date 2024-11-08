@@ -47,7 +47,6 @@ package com.teragrep.aer_02;
 
 import com.microsoft.azure.functions.annotation.*;
 import com.microsoft.azure.functions.*;
-import com.teragrep.aer_02.config.MetricsConfig;
 import com.teragrep.aer_02.config.source.EnvironmentSource;
 import com.teragrep.aer_02.config.source.Sourceable;
 import io.prometheus.client.CollectorRegistry;
@@ -111,9 +110,7 @@ public class SyslogBridge {
 
         if (consumer == null) {
             final Sourceable configSource = new EnvironmentSource();
-            final int prometheusPort = new MetricsConfig(configSource).prometheusPort;
-
-            consumer = new EventDataConsumer(configSource, prometheusPort);
+            consumer = new EventDataConsumer(configSource);
         }
 
         for (int index = 0; index < events.length; index++) {
