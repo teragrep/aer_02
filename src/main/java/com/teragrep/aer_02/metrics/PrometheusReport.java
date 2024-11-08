@@ -51,26 +51,18 @@ import io.prometheus.client.CollectorRegistry;
 public final class PrometheusReport implements Report {
 
     private final Collector collector;
-    private final Report report;
 
     public PrometheusReport(final Collector collector) {
-        this(new DummyReport(), collector);
-    }
-
-    public PrometheusReport(final Report report, final Collector collector) {
-        this.report = report;
         this.collector = collector;
     }
 
     @Override
     public void start() {
         CollectorRegistry.defaultRegistry.register(collector);
-        report.start();
     }
 
     @Override
-    public void close() throws Exception {
-        report.close();
+    public void close() {
         CollectorRegistry.defaultRegistry.unregister(collector);
     }
 }

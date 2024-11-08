@@ -56,10 +56,6 @@ public final class Slf4jReport implements Report {
     private final Slf4jReporter slf4jReporter;
     private final Report report;
 
-    public Slf4jReport(final MetricRegistry metricRegistry) {
-        this(new DummyReport(), metricRegistry);
-    }
-
     public Slf4jReport(final Report report, final MetricRegistry metricRegistry) {
         this(
                 report,

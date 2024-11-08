@@ -53,10 +53,6 @@ public final class JmxReport implements Report {
     private final Report report;
     private final JmxReporter jmxReporter;
 
-    public JmxReport(final MetricRegistry metricRegistry) {
-        this(new DummyReport(), metricRegistry);
-    }
-
     public JmxReport(final Report report, final MetricRegistry metricRegistry) {
         this(report, JmxReporter.forRegistry(metricRegistry).build());
     }
