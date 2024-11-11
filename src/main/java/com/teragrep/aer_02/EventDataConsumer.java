@@ -143,6 +143,9 @@ final class EventDataConsumer implements AutoCloseable {
         //.addSDParam("correlation_id", correlationId == null ? "" : correlationId);
         props.forEach((key, value) -> sdEvent.addSDParam("property_" + key, value.toString()));
 
+        SDElement sdComponentInfo = new SDElement("aer_02@48577")
+                .addSDParam("timestamp_source", enqueuedTime == null ? "generated" : "timeEnqueued");
+
         SyslogMessage syslogMessage = new SyslogMessage()
                 .withSeverity(Severity.INFORMATIONAL)
                 .withFacility(Facility.LOCAL0)
@@ -152,6 +155,7 @@ final class EventDataConsumer implements AutoCloseable {
                 .withSDElement(sdId)
                 .withSDElement(sdPartition)
                 .withSDElement(sdEvent)
+                .withSDElement(sdComponentInfo)
                 //.withSDElement(sdCorId)
                 .withMsgId(String.valueOf(systemProps.getOrDefault("SequenceNumber", "0")))
                 .withMsg(eventData);
