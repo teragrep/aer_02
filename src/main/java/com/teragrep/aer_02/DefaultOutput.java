@@ -122,12 +122,12 @@ final class DefaultOutput implements Output {
         connect();
     }
 
+    @SuppressWarnings("RESOURCE_LEAK")
     private void connect() {
         boolean connected = false;
         while (!connected) {
             final Timer.Context context = connectLatency.time(); // reset the time (new context)
             try {
-                // coverity[leaked_resource]
                 connected = this.relpConnection.connect(relpAddress, relpPort);
                 /*
                 Not closing the context in case of an exception thrown in .connect() will leave the timer.context
