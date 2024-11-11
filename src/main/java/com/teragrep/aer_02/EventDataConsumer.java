@@ -110,18 +110,11 @@ final class EventDataConsumer implements AutoCloseable {
             }
         });
 
-        String eventUuid = null; //TODO: Message id not available?
-
-        // FIXME proper handling of non-provided uuids
-        if (eventUuid == null) {
-            eventUuid = "aer_02=" + UUID.randomUUID();
-        }
-
         SDElement sdId = new SDElement("event_id@48577")
+                .addSDParam("uuid", UUID.randomUUID().toString())
                 .addSDParam("hostname", realHostName)
-                .addSDParam("uuid", eventUuid)
                 .addSDParam("unixtime", Instant.now().toString())
-                .addSDParam("id_source", "source");
+                .addSDParam("id_source", "aer_02");
 
         SDElement sdPartition = new SDElement("aer_02_partition@48577")
                 .addSDParam(
@@ -134,13 +127,10 @@ final class EventDataConsumer implements AutoCloseable {
 
         String partitionKey = String.valueOf(systemProps.getOrDefault("PartitionKey", ""));
 
-        // TODO: Correlation id not available?
-        // String correlationId = props.get("correlationId").toString();
         SDElement sdEvent = new SDElement("aer_02_event@48577")
                 .addSDParam("offset", offset == null ? "" : offset)
                 .addSDParam("enqueued_time", enqueuedTime == null ? "" : enqueuedTime.toString())
                 .addSDParam("partition_key", partitionKey == null ? "" : partitionKey);
-        //.addSDParam("correlation_id", correlationId == null ? "" : correlationId);
         props.forEach((key, value) -> sdEvent.addSDParam("property_" + key, value.toString()));
 
         SDElement sdComponentInfo = new SDElement("aer_02@48577")
@@ -156,7 +146,6 @@ final class EventDataConsumer implements AutoCloseable {
                 .withSDElement(sdPartition)
                 .withSDElement(sdEvent)
                 .withSDElement(sdComponentInfo)
-                //.withSDElement(sdCorId)
                 .withMsgId(String.valueOf(systemProps.getOrDefault("SequenceNumber", "0")))
                 .withMsg(eventData);
 
