@@ -49,6 +49,7 @@ import com.codahale.metrics.MetricRegistry;
 import com.microsoft.azure.functions.*;
 import com.microsoft.azure.functions.annotation.*;
 import com.teragrep.aer_02.config.source.EnvironmentSource;
+import com.teragrep.aer_02.json.JsonRecords;
 import com.teragrep.aer_02.metrics.JmxReport;
 import com.teragrep.aer_02.metrics.PrometheusReport;
 import com.teragrep.aer_02.metrics.Report;
@@ -144,8 +145,11 @@ public class SyslogBridge {
             if (events[index] != null) {
                 final ZonedDateTime et = ZonedDateTime.parse(enqueuedTimeUtcArray.get(index) + "Z"); // needed as the UTC time presented does not have a TZ
                 context.getLogger().fine("Accepting event: " + events[index]);
-                consumer
-                        .accept(events[index], partitionContext, et, offsetArray.get(index), propertiesArray[index], systemPropertiesArray[index]);
+                final String[] records = new JsonRecords(events[index]).records();
+                for (final String record : records) {
+                    consumer
+                            .accept(record, partitionContext, et, offsetArray.get(index), propertiesArray[index], systemPropertiesArray[index]);
+                }
             }
             else {
                 context.getLogger().warning("eventHubTriggerToSyslog event data is null");
