@@ -60,6 +60,7 @@ import com.teragrep.rlp_03.frame.FrameDelegationClockFactory;
 import com.teragrep.rlp_03.frame.delegate.DefaultFrameDelegate;
 import com.teragrep.rlp_03.frame.delegate.FrameContext;
 import com.teragrep.rlp_03.frame.delegate.FrameDelegate;
+import jakarta.json.Json;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -152,6 +153,62 @@ public final class SyslogBridgeTest {
         }
 
         Assertions.assertEquals(3, loops);
+    }
+
+    @Test
+    void testSyslogBridgeWithJsonRecordsData() {
+        PartitionContextFake pcf = new PartitionContextFake("eventhub.123", "test1", "$Default", "0");
+        Map<String, Object> props = new HashMap<>();
+        final SyslogBridge bridge = new SyslogBridge();
+
+        final String jsonRecords = Json
+                .createObjectBuilder()
+                .add("records", Json.createArrayBuilder().add("record1").add("record2").add("record3").build())
+                .build()
+                .toString();
+
+        bridge.eventHubTriggerToSyslog(new String[] {
+                jsonRecords, jsonRecords, jsonRecords
+        }, pcf.asMap(), new Map[] {
+                props, props, props
+        }, new Map[] {
+                new SystemPropsFake("0").asMap(), new SystemPropsFake("1").asMap(), new SystemPropsFake("2").asMap()
+        }, Arrays.asList("2010-01-01T00:00:00", "2010-01-02T00:00:00", "2010-01-03T00:00:00"),
+                Arrays.asList("0", "1", "2"), new ExecutionContextFake()
+        );
+
+        // there are 3 JSON records-type events with 3 records each, totalling 9 messages
+        Assertions.assertEquals(9, messages.size());
+
+        final String[] expectedSeqNums = new String[] {
+                "0", "0", "0", "1", "1", "1", "2", "2", "2"
+        };
+
+        final String[] expectedMessages = new String[] {
+                "\"record1\"",
+                "\"record2\"",
+                "\"record3\"",
+                "\"record1\"",
+                "\"record2\"",
+                "\"record3\"",
+                "\"record1\"",
+                "\"record2\"",
+                "\"record3\""
+        };
+
+        int loops = 0;
+        for (String message : messages) {
+            final RFC5424Frame frame = new RFC5424Frame(false);
+            frame.load(new ByteArrayInputStream(message.getBytes(StandardCharsets.UTF_8)));
+            Assertions.assertTrue(Assertions.assertDoesNotThrow(frame::next));
+            Assertions.assertEquals(expectedMessages[loops], frame.msg.toString());
+            Assertions.assertEquals("localhost.localdomain", frame.hostname.toString());
+            Assertions.assertEquals("aer-02", frame.appName.toString());
+            Assertions.assertEquals(expectedSeqNums[loops], frame.msgId.toString());
+            loops++;
+        }
+
+        Assertions.assertEquals(9, loops);
     }
 
     @Test
