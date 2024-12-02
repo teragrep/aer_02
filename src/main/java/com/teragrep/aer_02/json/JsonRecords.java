@@ -66,7 +66,7 @@ public final class JsonRecords {
      */
     public String[] records() {
         final String[] rv = new String[] {
-            event
+                event
         };
 
         final JsonStructure mainStructure;
@@ -74,6 +74,7 @@ public final class JsonRecords {
             mainStructure = reader.read();
         }
         catch (JsonParsingException e) {
+            // pass event through as-is if JSON parsing fails
             return rv;
         }
 
@@ -91,6 +92,7 @@ public final class JsonRecords {
             return records;
         }
 
+        // pass event through as-is if "records" is not an array type
         return rv;
     }
 
