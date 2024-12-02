@@ -46,6 +46,7 @@
 package com.teragrep.aer_02.json;
 
 import jakarta.json.Json;
+import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -98,5 +99,10 @@ public class JsonRecordsTest {
         JsonRecords jr = new JsonRecords("{\"a\":\"b\",\"c\":\"d\"}");
         JsonRecords jr2 = new JsonRecords("{\"e\":\"f\",\"g\":\"h\"}");
         Assertions.assertNotEquals(jr, jr2);
+    }
+
+    @Test
+    void testEqualsContract() {
+        EqualsVerifier.forClass(JsonRecords.class).verify();
     }
 }
