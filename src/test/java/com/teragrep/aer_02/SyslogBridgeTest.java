@@ -180,8 +180,20 @@ public final class SyslogBridgeTest {
         // there are 3 JSON records-type events with 3 records each, totalling 9 messages
         Assertions.assertEquals(9, messages.size());
 
-        final String[] seqNums = new String[] {
+        final String[] expectedSeqNums = new String[] {
                 "0", "0", "0", "1", "1", "1", "2", "2", "2"
+        };
+
+        final String[] expectedMessages = new String[] {
+                "\"record1\"",
+                "\"record2\"",
+                "\"record3\"",
+                "\"record1\"",
+                "\"record2\"",
+                "\"record3\"",
+                "\"record1\"",
+                "\"record2\"",
+                "\"record3\""
         };
 
         int loops = 0;
@@ -189,10 +201,10 @@ public final class SyslogBridgeTest {
             final RFC5424Frame frame = new RFC5424Frame(false);
             frame.load(new ByteArrayInputStream(message.getBytes(StandardCharsets.UTF_8)));
             Assertions.assertTrue(Assertions.assertDoesNotThrow(frame::next));
-            Assertions.assertEquals("\"record" + ((loops % 3) + 1) + "\"", frame.msg.toString());
+            Assertions.assertEquals(expectedMessages[loops], frame.msg.toString());
             Assertions.assertEquals("localhost.localdomain", frame.hostname.toString());
             Assertions.assertEquals("aer-02", frame.appName.toString());
-            Assertions.assertEquals(seqNums[loops], frame.msgId.toString());
+            Assertions.assertEquals(expectedSeqNums[loops], frame.msgId.toString());
             loops++;
         }
 
