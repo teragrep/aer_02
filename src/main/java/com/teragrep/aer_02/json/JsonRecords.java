@@ -65,13 +65,12 @@ public final class JsonRecords {
      * @return individual records as an array or the original event.
      */
     public String[] records() {
-        final JsonReader reader = Json.createReader(new StringReader(event));
-        String[] rv = new String[] {
-                event
+        final String[] rv = new String[] {
+            event
         };
 
         final JsonStructure mainStructure;
-        try {
+        try (final JsonReader reader = Json.createReader(new StringReader(event))) {
             mainStructure = reader.read();
         }
         catch (JsonParsingException e) {
@@ -83,11 +82,13 @@ public final class JsonRecords {
         if (recordsStructure.getValueType().equals(JsonValue.ValueType.ARRAY)) {
             final JsonArray recordsArray = recordsStructure.asJsonArray();
             String[] records = new String[recordsArray.size()];
+
             for (int i = 0; i < recordsArray.size(); i++) {
                 // Take string representation of inner value regardless of actual datatype
                 records[i] = recordsArray.get(i).toString();
             }
-            rv = records;
+
+            return records;
         }
 
         return rv;
