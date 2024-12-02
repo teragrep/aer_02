@@ -98,10 +98,14 @@ public final class JsonRecords {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o)
+        if (this == o) {
             return true;
-        if (o == null || getClass() != o.getClass())
+        }
+
+        if (o == null || getClass() != o.getClass()) {
             return false;
+        }
+
         JsonRecords that = (JsonRecords) o;
         return Objects.equals(event, that.event);
     }
