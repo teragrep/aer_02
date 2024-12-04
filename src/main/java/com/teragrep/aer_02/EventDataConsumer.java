@@ -139,7 +139,7 @@ final class EventDataConsumer implements AutoCloseable {
         SyslogMessage syslogMessage = new SyslogMessage()
                 .withSeverity(Severity.INFORMATIONAL)
                 .withFacility(Facility.LOCAL0)
-                .withTimestamp(enqueuedTime == null ? Instant.now() : enqueuedTime.toInstant())
+                .withTimestamp(enqueuedTime == null ? Instant.now().toEpochMilli() : enqueuedTime.toInstant().toEpochMilli())
                 .withHostname(syslogConfig.hostName())
                 .withAppName(syslogConfig.appName())
                 .withSDElement(sdId)
