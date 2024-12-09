@@ -48,13 +48,13 @@ package com.teragrep.aer_02;
 import com.codahale.metrics.*;
 import com.teragrep.aer_02.config.RelpConfig;
 import com.teragrep.rlp_01.RelpBatch;
-import com.teragrep.rlp_01.RelpConnection;
+import com.teragrep.rlp_01.client.IManagedRelpConnection;
+import com.teragrep.rlp_01.client.ManagedRelpConnectionStub;
+import com.teragrep.rlp_01.client.RelpConnectionFactory;
+import com.teragrep.rlp_01.pool.Pool;
+import com.teragrep.rlp_01.pool.UnboundPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.nio.channels.UnresolvedAddressException;
-import java.util.concurrent.TimeoutException;
 
 import static com.codahale.metrics.MetricRegistry.name;
 
@@ -63,7 +63,8 @@ final class DefaultOutput implements Output {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultOutput.class);
 
-    private final RelpConnection relpConnection;
+    private final Pool<IManagedRelpConnection> relpConnectionPool;
+    //private final RelpConnection relpConnection;
     private final String relpAddress;
     private final int relpPort;
     private final int reconnectInterval;
@@ -78,15 +79,25 @@ final class DefaultOutput implements Output {
     private final Timer connectLatency;
 
     DefaultOutput(String name, RelpConfig relpConfig, MetricRegistry metricRegistry) {
-        this(name, relpConfig, metricRegistry, new RelpConnection());
-    }
-
-    DefaultOutput(String name, RelpConfig relpConfig, MetricRegistry metricRegistry, RelpConnection relpConnection) {
         this(
                 name,
                 relpConfig,
                 metricRegistry,
-                relpConnection,
+                new UnboundPool<>(new RelpConnectionFactory(relpConfig.asRLP01Config()), new ManagedRelpConnectionStub())
+        );
+    }
+
+    DefaultOutput(
+            String name,
+            RelpConfig relpConfig,
+            MetricRegistry metricRegistry,
+            Pool<IManagedRelpConnection> relpConnectionPool
+    ) {
+        this(
+                name,
+                relpConfig,
+                metricRegistry,
+                relpConnectionPool,
                 new SlidingWindowReservoir(10000),
                 new SlidingWindowReservoir(10000)
         );
@@ -96,7 +107,7 @@ final class DefaultOutput implements Output {
             String name,
             RelpConfig relpConfig,
             MetricRegistry metricRegistry,
-            RelpConnection relpConnection,
+            Pool<IManagedRelpConnection> relpConnectionPool,
             Reservoir sendReservoir,
             Reservoir connectReservoir
     ) {
@@ -104,10 +115,7 @@ final class DefaultOutput implements Output {
         this.relpPort = relpConfig.relpPort();
         this.reconnectInterval = relpConfig.reconnectInterval();
 
-        this.relpConnection = relpConnection;
-        this.relpConnection.setConnectionTimeout(relpConfig.connectTimeout());
-        this.relpConnection.setReadTimeout(relpConfig.readTimeout());
-        this.relpConnection.setWriteTimeout(relpConfig.writeTimeout());
+        this.relpConnectionPool = relpConnectionPool;
 
         this.records = metricRegistry.counter(name(DefaultOutput.class, "<[" + name + "]>", "records"));
         this.bytes = metricRegistry.counter(name(DefaultOutput.class, "<[" + name + "]>", "bytes"));
@@ -118,46 +126,6 @@ final class DefaultOutput implements Output {
                 .timer(name(DefaultOutput.class, "<[" + name + "]>", "sendLatency"), () -> new Timer(sendReservoir));
         this.connectLatency = metricRegistry
                 .timer(name(DefaultOutput.class, "<[" + name + "]>", "connectLatency"), () -> new Timer(connectReservoir));
-
-        connect();
-    }
-
-    private void connect() {
-        boolean connected = false;
-        while (!connected) {
-            final Timer.Context context = connectLatency.time(); // reset the time (new context)
-            try {
-                // coverity[leaked_resource]
-                connected = this.relpConnection.connect(relpAddress, relpPort);
-                /*
-                Not closing the context in case of an exception thrown in .connect() will leave the timer.context
-                for garbage collector to remove. This will happen even if the context is closed because of how
-                the Timer is implemented.
-                 */
-                context.close(); // manually close here, so the timer is only updated if no exceptions were thrown
-                connects.inc();
-            }
-            catch (IOException | TimeoutException e) {
-                LOGGER.error("Exception while connecting to <[{}]>:<[{}]>", relpAddress, relpPort, e);
-            }
-            catch (UnresolvedAddressException e) {
-                LOGGER.error("Can't resolve address of target <[{}]>", relpAddress, e);
-            }
-
-            if (!connected) {
-                try {
-                    Thread.sleep(reconnectInterval);
-                    retriedConnects.inc();
-                }
-                catch (InterruptedException e) {
-                    LOGGER
-                            .warn(
-                                    "Sleep interrupted while waiting for reconnectInterval <[{}]> on <[{}]>:<[{}]>",
-                                    reconnectInterval, relpAddress, relpPort, e
-                            );
-                }
-            }
-        }
     }
 
     @Override
@@ -165,41 +133,14 @@ final class DefaultOutput implements Output {
         try (final Timer.Context context = sendLatency.time()) {
             RelpBatch batch = new RelpBatch();
             batch.insert(syslogMessage);
+            IManagedRelpConnection connection = relpConnectionPool.get();
+            connection.ensureSent(syslogMessage);
 
-            boolean allSent = false;
-            while (!allSent) {
-                try {
-                    this.relpConnection.commit(batch);
-
-                    // metrics
-                    // NOTICE these if batch size changes
-                    records.inc(1);
-                    bytes.inc(syslogMessage.length);
-
-                }
-                catch (IllegalStateException | IOException | TimeoutException e) {
-                    LOGGER.error("Exception while committing a batch to <[{}]>:<[{}]>", relpAddress, relpPort, e);
-                }
-                // Check if everything has been sent, retry and reconnect if not.
-                if (!batch.verifyTransactionAll()) {
-                    batch.retryAllFailed();
-
-                    // metrics
-                    // NOTICE this if batch size changes
-                    resends.inc(1);
-                    relpConnection.tearDown();
-                    try {
-                        Thread.sleep(reconnectInterval);
-                    }
-                    catch (InterruptedException e) {
-                        throw new RuntimeException(e);
-                    }
-                    connect();
-                }
-                else {
-                    allSent = true;
-                }
-            }
+            // metrics
+            // NOTICE these if batch size changes
+            records.inc(1);
+            bytes.inc(syslogMessage.length);
+            relpConnectionPool.offer(connection);
         }
     }
 
@@ -208,15 +149,8 @@ final class DefaultOutput implements Output {
         return "DefaultOutput{" + "relpAddress='" + relpAddress + '\'' + ", relpPort=" + relpPort + '}';
     }
 
+    @Override
     public void close() {
-        try {
-            relpConnection.disconnect();
-        }
-        catch (IOException | TimeoutException e) {
-            LOGGER.warn("Exception while disconnecting from <[{}]>:<[{}]>", relpAddress, relpPort, e);
-        }
-        finally {
-            relpConnection.tearDown();
-        }
+        relpConnectionPool.close();
     }
 }

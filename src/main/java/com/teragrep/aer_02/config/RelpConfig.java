@@ -47,6 +47,8 @@ package com.teragrep.aer_02.config;
 
 import com.teragrep.aer_02.config.source.Sourceable;
 
+import java.time.Duration;
+
 public final class RelpConfig {
 
     private final int connectTimeout;
@@ -123,5 +125,18 @@ public final class RelpConfig {
      */
     public String relpAddress() {
         return address;
+    }
+
+    public com.teragrep.rlp_01.client.RelpConfig asRLP01Config() {
+        //FIXME: Introduce new configurations
+        return new com.teragrep.rlp_01.client.RelpConfig(
+                relpAddress(),
+                relpPort(),
+                reconnectInterval(),
+                1,
+                true,
+                Duration.ZERO,
+                false
+        );
     }
 }
