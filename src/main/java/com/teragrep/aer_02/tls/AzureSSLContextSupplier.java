@@ -43,29 +43,44 @@
  * Teragrep, the applicable Commercial License may apply to this file if you as
  * a licensee so wish it.
  */
-package com.teragrep.aer_02;
+package com.teragrep.aer_02.tls;
 
-import com.teragrep.aer_02.config.RelpConnectionConfig;
-import com.teragrep.aer_02.config.SyslogConfig;
-import com.teragrep.aer_02.config.source.EnvironmentSource;
-import com.teragrep.aer_02.config.source.PropertySource;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
+import com.teragrep.rlp_01.client.SSLContextSupplier;
+import com.azure.security.keyvault.jca.*;
+import org.apache.hc.core5.ssl.SSLContexts;
 
-public class ConfigTest {
+import javax.net.ssl.SSLContext;
+import java.io.IOException;
+import java.security.*;
+import java.security.cert.CertificateException;
 
-    @Test
-    public void testConfigFromProperty() {
-        String expected = "testing.hostname.example.com";
-        System.setProperty("syslog.hostname", expected);
-        SyslogConfig syslogConfig = new SyslogConfig(new PropertySource());
-        Assertions.assertEquals(expected, syslogConfig.hostName(), "Expected to get config from property");
-        System.clearProperty("syslog.hostname");
+public class AzureSSLContextSupplier implements SSLContextSupplier {
+
+    @Override
+    public SSLContext get() {
+        KeyVaultJcaProvider jca = new KeyVaultJcaProvider();
+        Security.addProvider(jca);
+        KeyStore keyStore;
+        try {
+            keyStore = KeyVaultKeyStore.getKeyVaultKeyStoreBySystemProperty();
+        }
+        catch (CertificateException | KeyStoreException | NoSuchAlgorithmException | IOException e) {
+            throw new RuntimeException("Error retrieving KeyStore from KeyVault: ", e);
+        }
+
+        SSLContext sslContext;
+        try {
+            sslContext = SSLContexts.custom().loadTrustMaterial(keyStore, (chain, authType) -> true).build();
+        }
+        catch (NoSuchAlgorithmException | KeyStoreException | KeyManagementException e) {
+            throw new RuntimeException("Error creating SSLContext: ", e);
+        }
+
+        return sslContext;
     }
 
-    @Test
-    public void testConfigFallback() {
-        RelpConnectionConfig relpConnectionConfig = new RelpConnectionConfig(new EnvironmentSource());
-        Assertions.assertEquals(1601, relpConnectionConfig.relpPort(), "Expected to get fallback value");
+    @Override
+    public boolean isStub() {
+        return false;
     }
 }

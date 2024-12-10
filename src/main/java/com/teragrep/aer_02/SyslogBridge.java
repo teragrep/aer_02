@@ -49,19 +49,18 @@ import com.codahale.metrics.MetricRegistry;
 import com.microsoft.azure.functions.*;
 import com.microsoft.azure.functions.annotation.*;
 import com.teragrep.aer_02.config.source.EnvironmentSource;
+import com.teragrep.aer_02.config.source.Sourceable;
 import com.teragrep.aer_02.json.JsonRecords;
 import com.teragrep.aer_02.metrics.JmxReport;
 import com.teragrep.aer_02.metrics.PrometheusReport;
 import com.teragrep.aer_02.metrics.Report;
 import com.teragrep.aer_02.metrics.Slf4jReport;
+import com.teragrep.aer_02.tls.AzureSSLContextSupplier;
 import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.dropwizard.DropwizardExports;
 import io.prometheus.client.exporter.common.TextFormat;
 
-import java.io.IOException;
-import java.io.StringWriter;
-import java.io.UncheckedIOException;
-import java.io.Writer;
+import java.io.*;
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
@@ -134,11 +133,15 @@ public class SyslogBridge {
         }
 
         if (consumer == null) {
-            consumer = new EventDataConsumer(
-                    new EnvironmentSource(),
-                    new Hostname("localhost").hostname(),
-                    metricRegistry
-            );
+            final Sourceable configSource = new EnvironmentSource();
+            final String hostname = new Hostname("localhost").hostname();
+
+            if (configSource.source("relp.tls.mode", "none").equals("keyVault")) {
+                consumer = new EventDataConsumer(configSource, hostname, metricRegistry, new AzureSSLContextSupplier());
+            }
+            else {
+                consumer = new EventDataConsumer(configSource, hostname, metricRegistry);
+            }
         }
 
         for (int index = 0; index < events.length; index++) {

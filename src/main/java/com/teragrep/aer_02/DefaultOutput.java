@@ -46,11 +46,12 @@
 package com.teragrep.aer_02;
 
 import com.codahale.metrics.*;
-import com.teragrep.aer_02.config.RelpConfig;
+import com.teragrep.aer_02.config.RelpConnectionConfig;
 import com.teragrep.rlp_01.RelpBatch;
 import com.teragrep.rlp_01.client.IManagedRelpConnection;
 import com.teragrep.rlp_01.client.ManagedRelpConnectionStub;
 import com.teragrep.rlp_01.client.RelpConnectionFactory;
+import com.teragrep.rlp_01.client.SSLContextSupplier;
 import com.teragrep.rlp_01.pool.Pool;
 import com.teragrep.rlp_01.pool.UnboundPool;
 import org.slf4j.Logger;
@@ -78,24 +79,51 @@ final class DefaultOutput implements Output {
     private final Timer sendLatency;
     private final Timer connectLatency;
 
-    DefaultOutput(String name, RelpConfig relpConfig, MetricRegistry metricRegistry) {
+    DefaultOutput(
+            String name,
+            RelpConnectionConfig relpConnectionConfig,
+            MetricRegistry metricRegistry,
+            SSLContextSupplier sslContextSupplier
+    ) {
         this(
                 name,
-                relpConfig,
+                relpConnectionConfig,
                 metricRegistry,
-                new UnboundPool<>(new RelpConnectionFactory(relpConfig.asRLP01Config()), new ManagedRelpConnectionStub())
+                new UnboundPool<>(
+                        new RelpConnectionFactory(
+                                relpConnectionConfig.asRelpConfig(),
+                                relpConnectionConfig.asSocketConfig(),
+                                sslContextSupplier
+                        ),
+                        new ManagedRelpConnectionStub()
+                )
+        );
+    }
+
+    DefaultOutput(String name, RelpConnectionConfig relpConnectionConfig, MetricRegistry metricRegistry) {
+        this(
+                name,
+                relpConnectionConfig,
+                metricRegistry,
+                new UnboundPool<>(
+                        new RelpConnectionFactory(
+                                relpConnectionConfig.asRelpConfig(),
+                                relpConnectionConfig.asSocketConfig()
+                        ),
+                        new ManagedRelpConnectionStub()
+                )
         );
     }
 
     DefaultOutput(
             String name,
-            RelpConfig relpConfig,
+            RelpConnectionConfig relpConnectionConfig,
             MetricRegistry metricRegistry,
             Pool<IManagedRelpConnection> relpConnectionPool
     ) {
         this(
                 name,
-                relpConfig,
+                relpConnectionConfig,
                 metricRegistry,
                 relpConnectionPool,
                 new SlidingWindowReservoir(10000),
@@ -105,15 +133,15 @@ final class DefaultOutput implements Output {
 
     DefaultOutput(
             String name,
-            RelpConfig relpConfig,
+            RelpConnectionConfig relpConnectionConfig,
             MetricRegistry metricRegistry,
             Pool<IManagedRelpConnection> relpConnectionPool,
             Reservoir sendReservoir,
             Reservoir connectReservoir
     ) {
-        this.relpAddress = relpConfig.relpAddress();
-        this.relpPort = relpConfig.relpPort();
-        this.reconnectInterval = relpConfig.reconnectInterval();
+        this.relpAddress = relpConnectionConfig.relpAddress();
+        this.relpPort = relpConnectionConfig.relpPort();
+        this.reconnectInterval = relpConnectionConfig.reconnectInterval();
 
         this.relpConnectionPool = relpConnectionPool;
 
