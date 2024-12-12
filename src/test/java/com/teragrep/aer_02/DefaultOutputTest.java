@@ -49,19 +49,18 @@ import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.SlidingWindowReservoir;
 import com.codahale.metrics.Timer;
 import com.teragrep.aer_02.config.RelpConnectionConfig;
-import com.teragrep.aer_02.config.source.EnvironmentSource;
 import com.teragrep.aer_02.config.source.PropertySource;
 import com.teragrep.aer_02.fakes.ConnectionlessRelpConnectionFake;
+import com.teragrep.aer_02.fakes.ManagedRelpConnectionStub;
+import com.teragrep.aer_02.fakes.RelpConnectionFake;
 import com.teragrep.aer_02.fakes.ThrowingRelpConnectionFake;
 import com.teragrep.rlo_14.Facility;
 import com.teragrep.rlo_14.Severity;
 import com.teragrep.rlo_14.SyslogMessage;
-import com.teragrep.rlp_01.RelpConnection;
-import com.teragrep.rlp_01.client.ManagedRelpConnectionStub;
-import com.teragrep.rlp_01.client.RelpConnectionFactory;
+import com.teragrep.rlp_01.client.IManagedRelpConnection;
+import com.teragrep.rlp_01.client.RelpConnectionWithConfig;
 import com.teragrep.rlp_01.pool.UnboundPool;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 
@@ -72,7 +71,6 @@ import static com.codahale.metrics.MetricRegistry.name;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class DefaultOutputTest {
 
-    @Disabled(value = "fix due to rlp-01 upgrade")
     @Test
     public void testSendLatencyMetricIsCapped() { // Should only keep information on the last 10.000 messages
         SyslogMessage syslogMessage = new SyslogMessage()
@@ -87,9 +85,22 @@ public class DefaultOutputTest {
         MetricRegistry metricRegistry = new MetricRegistry();
         SlidingWindowReservoir sendReservoir = new SlidingWindowReservoir(measurementLimit);
         SlidingWindowReservoir connectReservoir = new SlidingWindowReservoir(measurementLimit);
-        try (
-                DefaultOutput output = new DefaultOutput("defaultOutput", new RelpConnectionConfig(new PropertySource()), metricRegistry, new UnboundPool<>(new RelpConnectionFactory(new RelpConnectionConfig(new EnvironmentSource()).asRelpConfig()), new ManagedRelpConnectionStub()), sendReservoir, connectReservoir)
-        ) {
+
+        UnboundPool<IManagedRelpConnection> pool = new UnboundPool<>(
+                () -> new ManagedRelpConnectionWithMetrics(
+                        new RelpConnectionWithConfig(
+                                new RelpConnectionFake(),
+                                new RelpConnectionConfig(new PropertySource()).asRelpConfig()
+                        ),
+                        "defaultOutput",
+                        metricRegistry,
+                        sendReservoir,
+                        connectReservoir
+                ),
+                new ManagedRelpConnectionStub()
+        );
+
+        try (DefaultOutput output = new DefaultOutput(new RelpConnectionConfig(new PropertySource()), pool)) {
 
             for (int i = 0; i < measurementLimit + 100; i++) { // send more messages than the limit is
                 output.accept(syslogMessage.toRfc5424SyslogMessage().getBytes(StandardCharsets.UTF_8));
@@ -100,7 +111,6 @@ public class DefaultOutputTest {
         Assertions.assertEquals(1, connectReservoir.size()); // only connected once
     }
 
-    @Disabled(value = "fix due to rlp-01 upgrade")
     @Test
     public void testConnectionLatencyMetricIsCapped() { // Should take information on how long it took to successfully connect
         System.setProperty("relp.connection.retry.interval", "1");
@@ -118,10 +128,15 @@ public class DefaultOutputTest {
         MetricRegistry metricRegistry = new MetricRegistry();
         SlidingWindowReservoir sendReservoir = new SlidingWindowReservoir(measurementLimit);
         SlidingWindowReservoir connectReservoir = new SlidingWindowReservoir(measurementLimit);
-        RelpConnection relpConnection = new ConnectionlessRelpConnectionFake(reconnections); // use a fake that forces reconnects
-        try (
-                DefaultOutput output = new DefaultOutput("defaultOutput", new RelpConnectionConfig(new PropertySource()), metricRegistry, new UnboundPool<>(new RelpConnectionFactory(new RelpConnectionConfig(new EnvironmentSource()).asRelpConfig()), new ManagedRelpConnectionStub()), sendReservoir, connectReservoir)
-        ) {
+
+        UnboundPool<IManagedRelpConnection> pool = new UnboundPool<>(
+                () -> new ManagedRelpConnectionWithMetrics(
+                        new RelpConnectionWithConfig(new ConnectionlessRelpConnectionFake(reconnections), new RelpConnectionConfig(new PropertySource()).asRelpConfig()), "defaultOutput", metricRegistry, sendReservoir, connectReservoir
+                ),
+                new ManagedRelpConnectionStub()
+        );
+
+        try (DefaultOutput output = new DefaultOutput(new RelpConnectionConfig(new PropertySource()), pool)) {
             output.accept(syslogMessage.toRfc5424SyslogMessage().getBytes(StandardCharsets.UTF_8));
         }
 
@@ -131,7 +146,6 @@ public class DefaultOutputTest {
         System.clearProperty("relp.connection.retry.interval");
     }
 
-    @Disabled(value = "fix due to rlp-01 upgrade")
     @Test
     public void testConnectionLatencyMetricWithException() { // should not update value if an exception was thrown from server
         System.setProperty("relp.connection.retry.interval", "1");
@@ -143,13 +157,16 @@ public class DefaultOutputTest {
                 .withMsg("test");
 
         final int reconnections = 10;
-
         // set up DefaultOutput
         MetricRegistry metricRegistry = new MetricRegistry();
-        RelpConnection relpConnection = new ThrowingRelpConnectionFake(reconnections); // use a fake that throws exceptions when connecting
-        try (
-                DefaultOutput output = new DefaultOutput("defaultOutput", new RelpConnectionConfig(new PropertySource()), metricRegistry, new UnboundPool<>(new RelpConnectionFactory(new RelpConnectionConfig(new EnvironmentSource()).asRelpConfig()), new ManagedRelpConnectionStub()))
-        ) {
+        UnboundPool<IManagedRelpConnection> pool = new UnboundPool<>(
+                () -> new ManagedRelpConnectionWithMetrics(
+                        new RelpConnectionWithConfig(new ThrowingRelpConnectionFake(reconnections), new RelpConnectionConfig(new PropertySource()).asRelpConfig()), "defaultOutput", metricRegistry
+                ),
+                new ManagedRelpConnectionStub()
+        );
+
+        try (DefaultOutput output = new DefaultOutput(new RelpConnectionConfig(new PropertySource()), pool)) {
             output.accept(syslogMessage.toRfc5424SyslogMessage().getBytes(StandardCharsets.UTF_8));
         }
 

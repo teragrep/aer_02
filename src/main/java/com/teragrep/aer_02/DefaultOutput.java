@@ -48,36 +48,19 @@ package com.teragrep.aer_02;
 import com.codahale.metrics.*;
 import com.teragrep.aer_02.config.RelpConnectionConfig;
 import com.teragrep.rlp_01.RelpBatch;
-import com.teragrep.rlp_01.client.IManagedRelpConnection;
-import com.teragrep.rlp_01.client.ManagedRelpConnectionStub;
-import com.teragrep.rlp_01.client.RelpConnectionFactory;
-import com.teragrep.rlp_01.client.SSLContextSupplier;
+import com.teragrep.rlp_01.client.*;
 import com.teragrep.rlp_01.pool.Pool;
 import com.teragrep.rlp_01.pool.UnboundPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static com.codahale.metrics.MetricRegistry.name;
-
-// TODO unify, this is a copy from cfe_35 which is a copy from rlo_10 with FIXES
 final class DefaultOutput implements Output {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultOutput.class);
 
     private final Pool<IManagedRelpConnection> relpConnectionPool;
-    //private final RelpConnection relpConnection;
     private final String relpAddress;
     private final int relpPort;
-    private final int reconnectInterval;
-
-    // metrics
-    private final Counter records;
-    private final Counter bytes;
-    private final Counter resends;
-    private final Counter connects;
-    private final Counter retriedConnects;
-    private final Timer sendLatency;
-    private final Timer connectLatency;
 
     DefaultOutput(
             String name,
@@ -86,12 +69,12 @@ final class DefaultOutput implements Output {
             SSLContextSupplier sslContextSupplier
     ) {
         this(
-                name,
                 relpConnectionConfig,
-                metricRegistry,
                 new UnboundPool<>(
-                        new RelpConnectionFactory(
+                        new ManagedRelpConnectionWithMetricsFactory(
                                 relpConnectionConfig.asRelpConfig(),
+                                name,
+                                metricRegistry,
                                 relpConnectionConfig.asSocketConfig(),
                                 sslContextSupplier
                         ),
@@ -102,12 +85,12 @@ final class DefaultOutput implements Output {
 
     DefaultOutput(String name, RelpConnectionConfig relpConnectionConfig, MetricRegistry metricRegistry) {
         this(
-                name,
                 relpConnectionConfig,
-                metricRegistry,
                 new UnboundPool<>(
-                        new RelpConnectionFactory(
+                        new ManagedRelpConnectionWithMetricsFactory(
                                 relpConnectionConfig.asRelpConfig(),
+                                name,
+                                metricRegistry,
                                 relpConnectionConfig.asSocketConfig()
                         ),
                         new ManagedRelpConnectionStub()
@@ -115,61 +98,20 @@ final class DefaultOutput implements Output {
         );
     }
 
-    DefaultOutput(
-            String name,
-            RelpConnectionConfig relpConnectionConfig,
-            MetricRegistry metricRegistry,
-            Pool<IManagedRelpConnection> relpConnectionPool
-    ) {
-        this(
-                name,
-                relpConnectionConfig,
-                metricRegistry,
-                relpConnectionPool,
-                new SlidingWindowReservoir(10000),
-                new SlidingWindowReservoir(10000)
-        );
-    }
-
-    DefaultOutput(
-            String name,
-            RelpConnectionConfig relpConnectionConfig,
-            MetricRegistry metricRegistry,
-            Pool<IManagedRelpConnection> relpConnectionPool,
-            Reservoir sendReservoir,
-            Reservoir connectReservoir
-    ) {
+    DefaultOutput(RelpConnectionConfig relpConnectionConfig, Pool<IManagedRelpConnection> relpConnectionPool) {
         this.relpAddress = relpConnectionConfig.relpAddress();
         this.relpPort = relpConnectionConfig.relpPort();
-        this.reconnectInterval = relpConnectionConfig.reconnectInterval();
 
         this.relpConnectionPool = relpConnectionPool;
-
-        this.records = metricRegistry.counter(name(DefaultOutput.class, "<[" + name + "]>", "records"));
-        this.bytes = metricRegistry.counter(name(DefaultOutput.class, "<[" + name + "]>", "bytes"));
-        this.resends = metricRegistry.counter(name(DefaultOutput.class, "<[" + name + "]>", "resends"));
-        this.connects = metricRegistry.counter(name(DefaultOutput.class, "<[" + name + "]>", "connects"));
-        this.retriedConnects = metricRegistry.counter(name(DefaultOutput.class, "<[" + name + "]>", "retriedConnects"));
-        this.sendLatency = metricRegistry
-                .timer(name(DefaultOutput.class, "<[" + name + "]>", "sendLatency"), () -> new Timer(sendReservoir));
-        this.connectLatency = metricRegistry
-                .timer(name(DefaultOutput.class, "<[" + name + "]>", "connectLatency"), () -> new Timer(connectReservoir));
     }
 
     @Override
     public void accept(byte[] syslogMessage) {
-        try (final Timer.Context context = sendLatency.time()) {
-            RelpBatch batch = new RelpBatch();
-            batch.insert(syslogMessage);
-            IManagedRelpConnection connection = relpConnectionPool.get();
-            connection.ensureSent(syslogMessage);
-
-            // metrics
-            // NOTICE these if batch size changes
-            records.inc(1);
-            bytes.inc(syslogMessage.length);
-            relpConnectionPool.offer(connection);
-        }
+        RelpBatch batch = new RelpBatch();
+        batch.insert(syslogMessage);
+        IManagedRelpConnection connection = relpConnectionPool.get();
+        connection.ensureSent(syslogMessage);
+        relpConnectionPool.offer(connection);
     }
 
     @Override

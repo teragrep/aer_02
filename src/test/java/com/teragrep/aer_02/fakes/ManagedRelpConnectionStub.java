@@ -45,90 +45,39 @@
  */
 package com.teragrep.aer_02.fakes;
 
-import com.teragrep.rlp_01.RelpBatch;
-import com.teragrep.rlp_01.RelpConnection;
+import com.teragrep.rlp_01.client.IManagedRelpConnection;
 
 import java.io.IOException;
 
-public class RelpConnectionFake extends RelpConnection {
+public class ManagedRelpConnectionStub implements IManagedRelpConnection {
 
     @Override
-    public int getReadTimeout() {
-        return 0;
+    public void reconnect() {
+        throw new UnsupportedOperationException("stub");
     }
 
     @Override
-    public void setReadTimeout(int readTimeout) {
-        // no-op in fake
+    public void connect() throws IOException {
+        throw new UnsupportedOperationException("stub");
     }
 
     @Override
-    public int getWriteTimeout() {
-        return 0;
+    public void forceReconnect() {
+        throw new UnsupportedOperationException("stub");
     }
 
     @Override
-    public void setWriteTimeout(int writeTimeout) {
-        // no-op in fake
+    public void ensureSent(byte[] bytes) {
+        throw new UnsupportedOperationException("stub");
     }
 
     @Override
-    public int getConnectionTimeout() {
-        return 0;
-    }
-
-    @Override
-    public void setConnectionTimeout(int timeout) {
-        // no-op in fake
-    }
-
-    @Override
-    public void setKeepAlive(boolean b) {
-        // no-op in fake
-    }
-
-    @Override
-    public int getRxBufferSize() {
-        return 0;
-    }
-
-    @Override
-    public void setRxBufferSize(int i) {
-        // no-op in fake
-    }
-
-    @Override
-    public int getTxBufferSize() {
-        return 0;
-    }
-
-    @Override
-    public void setTxBufferSize(int i) {
-        // no-op in fake
-    }
-
-    @Override
-    public boolean connect(String hostname, int port) throws IOException {
+    public boolean isStub() {
         return true;
     }
 
     @Override
-    public void tearDown() {
-        // no-op in fake
-    }
-
-    @Override
-    public boolean disconnect() {
-        return true;
-    }
-
-    @Override
-    public void commit(RelpBatch relpBatch) {
-        // remove all the requests from relpBatch in the fake
-        // so that the batch will return true in verifyTransactionAll()
-        while (relpBatch.getWorkQueueLength() > 0) {
-            long reqId = relpBatch.popWorkQueue();
-            relpBatch.removeRequest(reqId);
-        }
+    public void close() throws IOException {
+        throw new UnsupportedOperationException("stub");
     }
 }
