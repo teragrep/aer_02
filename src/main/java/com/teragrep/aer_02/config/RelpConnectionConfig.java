@@ -73,7 +73,7 @@ public final class RelpConnectionConfig {
                 Integer.parseInt(configSource.source("relp.connection.retry.interval", "5000")),
                 Integer.parseInt(configSource.source("relp.connection.port", "601")),
                 configSource.source("relp.connection.address", "localhost"),
-                Integer.parseInt(configSource.source("relp.rebind.request.amount", "1")),
+                Integer.parseInt(configSource.source("relp.rebind.request.amount", "100000")),
                 Boolean.parseBoolean(configSource.source("relp.rebind.enabled", "true")),
                 Duration.parse(configSource.source("relp.max.idle.duration", Duration.ZERO.toString())),
                 Boolean.parseBoolean(configSource.source("relp.max.idle.enabled", "false"))

@@ -91,7 +91,7 @@ public class EventDataConsumerTlsTest {
     private EventLoop eventLoop;
     private Thread eventLoopThread;
     private ExecutorService executorService;
-    private final List<String> messages = new ArrayList<>();
+    private final List<String> messages = Collections.synchronizedList(new ArrayList<>());
 
     @BeforeEach
     void setUp() {
