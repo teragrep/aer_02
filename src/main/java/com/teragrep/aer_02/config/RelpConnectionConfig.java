@@ -64,19 +64,21 @@ public final class RelpConnectionConfig {
     private final boolean rebindEnabled;
     private final Duration maxIdle;
     private final boolean maxIdleEnabled;
+    private final boolean keepAlive;
 
     public RelpConnectionConfig(final Sourceable configSource) {
         this(
-                Integer.parseInt(configSource.source("relp.connection.timeout", "5000")),
-                Integer.parseInt(configSource.source("relp.transaction.read.timeout", "5000")),
-                Integer.parseInt(configSource.source("relp.transaction.write.timeout", "5000")),
-                Integer.parseInt(configSource.source("relp.connection.retry.interval", "5000")),
+                Integer.parseInt(configSource.source("relp.connection.timeout", "2500")),
+                Integer.parseInt(configSource.source("relp.transaction.read.timeout", "1500")),
+                Integer.parseInt(configSource.source("relp.transaction.write.timeout", "1500")),
+                Integer.parseInt(configSource.source("relp.connection.retry.interval", "500")),
                 Integer.parseInt(configSource.source("relp.connection.port", "601")),
                 configSource.source("relp.connection.address", "localhost"),
                 Integer.parseInt(configSource.source("relp.rebind.request.amount", "100000")),
                 Boolean.parseBoolean(configSource.source("relp.rebind.enabled", "true")),
-                Duration.parse(configSource.source("relp.max.idle.duration", Duration.ZERO.toString())),
-                Boolean.parseBoolean(configSource.source("relp.max.idle.enabled", "false"))
+                Duration.parse(configSource.source("relp.max.idle.duration", Duration.ofMillis(150000L).toString())),
+                Boolean.parseBoolean(configSource.source("relp.max.idle.enabled", "false")),
+                Boolean.parseBoolean(configSource.source("relp.connection.keepalive", "true"))
 
         );
     }
@@ -91,7 +93,8 @@ public final class RelpConnectionConfig {
             final int rebindRequestAmount,
             final boolean rebindEnabled,
             final Duration maxIdle,
-            final boolean maxIdleEnabled
+            final boolean maxIdleEnabled,
+            final boolean keepAlive
     ) {
         this.connectTimeout = connectTimeout;
         this.readTimeout = readTimeout;
@@ -103,6 +106,7 @@ public final class RelpConnectionConfig {
         this.rebindEnabled = rebindEnabled;
         this.maxIdle = maxIdle;
         this.maxIdleEnabled = maxIdleEnabled;
+        this.keepAlive = keepAlive;
     }
 
     /**
@@ -163,6 +167,10 @@ public final class RelpConnectionConfig {
         return rebindRequestAmount;
     }
 
+    public boolean keepAlive() {
+        return keepAlive;
+    }
+
     public RelpConfig asRelpConfig() {
         return new RelpConfig(
                 relpAddress(),
@@ -176,6 +184,6 @@ public final class RelpConnectionConfig {
     }
 
     public SocketConfig asSocketConfig() {
-        return new SocketConfigImpl(readTimeout(), writeTimeout(), connectTimeout(), false);
+        return new SocketConfigImpl(readTimeout(), writeTimeout(), connectTimeout(), keepAlive());
     }
 }
