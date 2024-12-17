@@ -43,92 +43,44 @@
  * Teragrep, the applicable Commercial License may apply to this file if you as
  * a licensee so wish it.
  */
-package com.teragrep.aer_02.fakes;
+package com.teragrep.aer_02.tls;
 
-import com.teragrep.rlp_01.RelpBatch;
-import com.teragrep.rlp_01.RelpConnection;
+import com.teragrep.rlp_01.client.SSLContextSupplier;
+import com.azure.security.keyvault.jca.*;
+import org.apache.hc.core5.ssl.SSLContexts;
 
+import javax.net.ssl.SSLContext;
 import java.io.IOException;
+import java.security.*;
+import java.security.cert.CertificateException;
 
-public class RelpConnectionFake extends RelpConnection {
-
-    @Override
-    public int getReadTimeout() {
-        return 0;
-    }
+public class AzureSSLContextSupplier implements SSLContextSupplier {
 
     @Override
-    public void setReadTimeout(int readTimeout) {
-        // no-op in fake
-    }
-
-    @Override
-    public int getWriteTimeout() {
-        return 0;
-    }
-
-    @Override
-    public void setWriteTimeout(int writeTimeout) {
-        // no-op in fake
-    }
-
-    @Override
-    public int getConnectionTimeout() {
-        return 0;
-    }
-
-    @Override
-    public void setConnectionTimeout(int timeout) {
-        // no-op in fake
-    }
-
-    @Override
-    public void setKeepAlive(boolean b) {
-        // no-op in fake
-    }
-
-    @Override
-    public int getRxBufferSize() {
-        return 0;
-    }
-
-    @Override
-    public void setRxBufferSize(int i) {
-        // no-op in fake
-    }
-
-    @Override
-    public int getTxBufferSize() {
-        return 0;
-    }
-
-    @Override
-    public void setTxBufferSize(int i) {
-        // no-op in fake
-    }
-
-    @Override
-    public boolean connect(String hostname, int port) throws IOException {
-        return true;
-    }
-
-    @Override
-    public void tearDown() {
-        // no-op in fake
-    }
-
-    @Override
-    public boolean disconnect() {
-        return true;
-    }
-
-    @Override
-    public void commit(RelpBatch relpBatch) {
-        // remove all the requests from relpBatch in the fake
-        // so that the batch will return true in verifyTransactionAll()
-        while (relpBatch.getWorkQueueLength() > 0) {
-            long reqId = relpBatch.popWorkQueue();
-            relpBatch.removeRequest(reqId);
+    public SSLContext get() {
+        KeyVaultJcaProvider jca = new KeyVaultJcaProvider();
+        Security.addProvider(jca);
+        KeyStore keyStore;
+        try {
+            keyStore = KeyVaultKeyStore.getKeyVaultKeyStoreBySystemProperty();
         }
+        catch (CertificateException | KeyStoreException | NoSuchAlgorithmException | IOException e) {
+            throw new RuntimeException("Error retrieving KeyStore from KeyVault: ", e);
+        }
+
+        SSLContext sslContext;
+        try {
+            sslContext = SSLContexts.custom().loadTrustMaterial(keyStore, (chain, authType) -> true).build();
+        }
+        catch (NoSuchAlgorithmException | KeyStoreException | KeyManagementException e) {
+            throw new RuntimeException("Error creating SSLContext: ", e);
+        }
+
+        return sslContext;
+    }
+
+    @Override
+    public boolean isStub() {
+        return false;
     }
 }

@@ -62,7 +62,7 @@
     <dependency>
       <groupId>com.teragrep</groupId>
       <artifactId>rlp_01</artifactId>
-      <version>4.0.3</version>
+      <version>4.1.0</version>
     </dependency>
     <dependency>
       <groupId>com.teragrep</groupId>
@@ -72,7 +72,7 @@
     <dependency>
       <groupId>com.teragrep</groupId>
       <artifactId>rlp_03</artifactId>
-      <version>8.0.1</version>
+      <version>10.0.0</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -179,6 +179,18 @@
       <groupId>org.eclipse.parsson</groupId>
       <artifactId>parsson</artifactId>
       <version>1.1.7</version>
+    </dependency>
+    <!-- Azure KeyVault -->
+    <!-- https://github.com/Azure/azure-sdk-for-java/tree/main/sdk/keyvault/azure-security-keyvault-jca#client-side-ssl -->
+    <dependency>
+      <groupId>com.azure</groupId>
+      <artifactId>azure-security-keyvault-jca</artifactId>
+      <version>2.10.0</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.httpcomponents.core5</groupId>
+      <artifactId>httpcore5</artifactId>
+      <version>5.3.1</version>
     </dependency>
   </dependencies>
   <build>

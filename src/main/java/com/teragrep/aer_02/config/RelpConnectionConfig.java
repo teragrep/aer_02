@@ -46,8 +46,13 @@
 package com.teragrep.aer_02.config;
 
 import com.teragrep.aer_02.config.source.Sourceable;
+import com.teragrep.rlp_01.client.RelpConfig;
+import com.teragrep.rlp_01.client.SocketConfig;
+import com.teragrep.rlp_01.client.SocketConfigImpl;
 
-public final class RelpConfig {
+import java.time.Duration;
+
+public final class RelpConnectionConfig {
 
     private final int connectTimeout;
     private final int readTimeout;
@@ -55,25 +60,41 @@ public final class RelpConfig {
     private final int reconnectInterval;
     private final int port;
     private final String address;
+    private final int rebindRequestAmount;
+    private final boolean rebindEnabled;
+    private final Duration maxIdle;
+    private final boolean maxIdleEnabled;
+    private final boolean keepAlive;
 
-    public RelpConfig(final Sourceable configSource) {
+    public RelpConnectionConfig(final Sourceable configSource) {
         this(
-                Integer.parseInt(configSource.source("relp.connection.timeout", "5000")),
-                Integer.parseInt(configSource.source("relp.transaction.read.timeout", "5000")),
-                Integer.parseInt(configSource.source("relp.transaction.write.timeout", "5000")),
-                Integer.parseInt(configSource.source("relp.connection.retry.interval", "5000")),
+                Integer.parseInt(configSource.source("relp.connection.timeout", "2500")),
+                Integer.parseInt(configSource.source("relp.transaction.read.timeout", "1500")),
+                Integer.parseInt(configSource.source("relp.transaction.write.timeout", "1500")),
+                Integer.parseInt(configSource.source("relp.connection.retry.interval", "500")),
                 Integer.parseInt(configSource.source("relp.connection.port", "601")),
-                configSource.source("relp.connection.address", "localhost")
+                configSource.source("relp.connection.address", "localhost"),
+                Integer.parseInt(configSource.source("relp.rebind.request.amount", "100000")),
+                Boolean.parseBoolean(configSource.source("relp.rebind.enabled", "true")),
+                Duration.parse(configSource.source("relp.max.idle.duration", Duration.ofMillis(150000L).toString())),
+                Boolean.parseBoolean(configSource.source("relp.max.idle.enabled", "false")),
+                Boolean.parseBoolean(configSource.source("relp.connection.keepalive", "true"))
+
         );
     }
 
-    public RelpConfig(
+    public RelpConnectionConfig(
             final int connectTimeout,
             final int readTimeout,
             final int writeTimeout,
             final int reconnectInt,
             final int port,
-            final String addr
+            final String addr,
+            final int rebindRequestAmount,
+            final boolean rebindEnabled,
+            final Duration maxIdle,
+            final boolean maxIdleEnabled,
+            final boolean keepAlive
     ) {
         this.connectTimeout = connectTimeout;
         this.readTimeout = readTimeout;
@@ -81,6 +102,11 @@ public final class RelpConfig {
         this.reconnectInterval = reconnectInt;
         this.port = port;
         this.address = addr;
+        this.rebindRequestAmount = rebindRequestAmount;
+        this.rebindEnabled = rebindEnabled;
+        this.maxIdle = maxIdle;
+        this.maxIdleEnabled = maxIdleEnabled;
+        this.keepAlive = keepAlive;
     }
 
     /**
@@ -123,5 +149,41 @@ public final class RelpConfig {
      */
     public String relpAddress() {
         return address;
+    }
+
+    public boolean maxIdleEnabled() {
+        return maxIdleEnabled;
+    }
+
+    public Duration maxIdle() {
+        return maxIdle;
+    }
+
+    public boolean rebindEnabled() {
+        return rebindEnabled;
+    }
+
+    public int rebindRequestAmount() {
+        return rebindRequestAmount;
+    }
+
+    public boolean keepAlive() {
+        return keepAlive;
+    }
+
+    public RelpConfig asRelpConfig() {
+        return new RelpConfig(
+                relpAddress(),
+                relpPort(),
+                reconnectInterval(),
+                rebindRequestAmount(),
+                rebindEnabled(),
+                maxIdle(),
+                maxIdleEnabled()
+        );
+    }
+
+    public SocketConfig asSocketConfig() {
+        return new SocketConfigImpl(readTimeout(), writeTimeout(), connectTimeout(), keepAlive());
     }
 }

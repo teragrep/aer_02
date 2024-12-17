@@ -45,7 +45,7 @@
  */
 package com.teragrep.aer_02;
 
-import com.teragrep.aer_02.config.RelpConfig;
+import com.teragrep.aer_02.config.RelpConnectionConfig;
 import com.teragrep.aer_02.config.SyslogConfig;
 import com.teragrep.aer_02.config.source.EnvironmentSource;
 import com.teragrep.aer_02.config.source.PropertySource;
@@ -65,7 +65,7 @@ public class ConfigTest {
 
     @Test
     public void testConfigFallback() {
-        RelpConfig relpConfig = new RelpConfig(new EnvironmentSource());
-        Assertions.assertEquals(1601, relpConfig.relpPort(), "Expected to get fallback value");
+        RelpConnectionConfig relpConnectionConfig = new RelpConnectionConfig(new EnvironmentSource());
+        Assertions.assertEquals(1601, relpConnectionConfig.relpPort(), "Expected to get fallback value");
     }
 }
