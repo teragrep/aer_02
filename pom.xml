@@ -248,6 +248,11 @@
             <exclude>eclipse-java-formatter.xml</exclude>
             <!-- readme -->
             <exclude>README.adoc</exclude>
+            <!-- certs -->
+            <exclude>src/test/resources/create-certs.sh</exclude>
+            <exclude>src/test/resources/**.pem</exclude>
+            <exclude>src/test/resources/**.srl</exclude>
+            <exclude>src/test/resources/**.jks</exclude>
           </excludes>
         </configuration>
         <executions>
