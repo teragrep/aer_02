@@ -48,15 +48,18 @@ package com.teragrep.aer_02;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.SlidingWindowReservoir;
 import com.codahale.metrics.Timer;
-import com.teragrep.aer_02.config.RelpConfig;
+import com.teragrep.aer_02.config.RelpConnectionConfig;
 import com.teragrep.aer_02.config.source.PropertySource;
 import com.teragrep.aer_02.fakes.ConnectionlessRelpConnectionFake;
+import com.teragrep.rlp_01.client.ManagedRelpConnectionStub;
 import com.teragrep.aer_02.fakes.RelpConnectionFake;
 import com.teragrep.aer_02.fakes.ThrowingRelpConnectionFake;
 import com.teragrep.rlo_14.Facility;
 import com.teragrep.rlo_14.Severity;
 import com.teragrep.rlo_14.SyslogMessage;
-import com.teragrep.rlp_01.RelpConnection;
+import com.teragrep.rlp_01.client.IManagedRelpConnection;
+import com.teragrep.rlp_01.client.RelpConnectionWithConfig;
+import com.teragrep.rlp_01.pool.UnboundPool;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -82,9 +85,22 @@ public class DefaultOutputTest {
         MetricRegistry metricRegistry = new MetricRegistry();
         SlidingWindowReservoir sendReservoir = new SlidingWindowReservoir(measurementLimit);
         SlidingWindowReservoir connectReservoir = new SlidingWindowReservoir(measurementLimit);
-        try (
-                DefaultOutput output = new DefaultOutput("defaultOutput", new RelpConfig(new PropertySource()), metricRegistry, new RelpConnectionFake(), sendReservoir, connectReservoir)
-        ) {
+
+        UnboundPool<IManagedRelpConnection> pool = new UnboundPool<>(
+                () -> new ManagedRelpConnectionWithMetrics(
+                        new RelpConnectionWithConfig(
+                                new RelpConnectionFake(),
+                                new RelpConnectionConfig(new PropertySource()).asRelpConfig()
+                        ),
+                        "defaultOutput",
+                        metricRegistry,
+                        sendReservoir,
+                        connectReservoir
+                ),
+                new ManagedRelpConnectionStub()
+        );
+
+        try (DefaultOutput output = new DefaultOutput(new RelpConnectionConfig(new PropertySource()), pool)) {
 
             for (int i = 0; i < measurementLimit + 100; i++) { // send more messages than the limit is
                 output.accept(syslogMessage.toRfc5424SyslogMessage().getBytes(StandardCharsets.UTF_8));
@@ -112,10 +128,15 @@ public class DefaultOutputTest {
         MetricRegistry metricRegistry = new MetricRegistry();
         SlidingWindowReservoir sendReservoir = new SlidingWindowReservoir(measurementLimit);
         SlidingWindowReservoir connectReservoir = new SlidingWindowReservoir(measurementLimit);
-        RelpConnection relpConnection = new ConnectionlessRelpConnectionFake(reconnections); // use a fake that forces reconnects
-        try (
-                DefaultOutput output = new DefaultOutput("defaultOutput", new RelpConfig(new PropertySource()), metricRegistry, relpConnection, sendReservoir, connectReservoir)
-        ) {
+
+        UnboundPool<IManagedRelpConnection> pool = new UnboundPool<>(
+                () -> new ManagedRelpConnectionWithMetrics(
+                        new RelpConnectionWithConfig(new ConnectionlessRelpConnectionFake(reconnections), new RelpConnectionConfig(new PropertySource()).asRelpConfig()), "defaultOutput", metricRegistry, sendReservoir, connectReservoir
+                ),
+                new ManagedRelpConnectionStub()
+        );
+
+        try (DefaultOutput output = new DefaultOutput(new RelpConnectionConfig(new PropertySource()), pool)) {
             output.accept(syslogMessage.toRfc5424SyslogMessage().getBytes(StandardCharsets.UTF_8));
         }
 
@@ -136,13 +157,16 @@ public class DefaultOutputTest {
                 .withMsg("test");
 
         final int reconnections = 10;
-
         // set up DefaultOutput
         MetricRegistry metricRegistry = new MetricRegistry();
-        RelpConnection relpConnection = new ThrowingRelpConnectionFake(reconnections); // use a fake that throws exceptions when connecting
-        try (
-                DefaultOutput output = new DefaultOutput("defaultOutput", new RelpConfig(new PropertySource()), metricRegistry, relpConnection)
-        ) {
+        UnboundPool<IManagedRelpConnection> pool = new UnboundPool<>(
+                () -> new ManagedRelpConnectionWithMetrics(
+                        new RelpConnectionWithConfig(new ThrowingRelpConnectionFake(reconnections), new RelpConnectionConfig(new PropertySource()).asRelpConfig()), "defaultOutput", metricRegistry
+                ),
+                new ManagedRelpConnectionStub()
+        );
+
+        try (DefaultOutput output = new DefaultOutput(new RelpConnectionConfig(new PropertySource()), pool)) {
             output.accept(syslogMessage.toRfc5424SyslogMessage().getBytes(StandardCharsets.UTF_8));
         }
 
