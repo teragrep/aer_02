@@ -130,7 +130,7 @@ public class ManagedRelpConnectionWithMetrics implements IManagedRelpConnection 
                 context.close();
                 connects.inc();
             }
-            catch (Exception e) {
+            catch (IOException | TimeoutException e) {
                 System.err
                         .println(
                                 "Failed to connect to relp server <[" + relpConnection.relpConfig().relpTarget + "]>:<["
