@@ -53,6 +53,33 @@ import org.junit.jupiter.api.Test;
 public class JsonRecordsTest {
 
     @Test
+    void testJsonArrayCase() {
+        final String records = Json.createArrayBuilder().add(0, 1).add(1, 2).build().toString();
+        JsonRecords jr = new JsonRecords(records);
+        final String[] result = jr.records();
+        Assertions.assertEquals(1, result.length);
+        Assertions.assertEquals("[1,2]", result[0]);
+    }
+
+    @Test
+    void testEmptyJsonObjectCase() {
+        final String records = Json.createObjectBuilder().build().toString();
+        JsonRecords jr = new JsonRecords(records);
+        final String[] result = jr.records();
+        Assertions.assertEquals(1, result.length);
+        Assertions.assertEquals("{}", result[0]);
+    }
+
+    @Test
+    void testOtherJsonObjectCase() {
+        final String records = Json.createObjectBuilder().add("k1", "v1").add("k2", "v2").build().toString();
+        JsonRecords jr = new JsonRecords(records);
+        final String[] result = jr.records();
+        Assertions.assertEquals(1, result.length);
+        Assertions.assertEquals("{\"k1\":\"v1\",\"k2\":\"v2\"}", result[0]);
+    }
+
+    @Test
     void testRecordsAsObjectsCase() {
         final String records = Json
                 .createObjectBuilder()
