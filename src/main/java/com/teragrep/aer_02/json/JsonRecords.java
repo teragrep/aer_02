@@ -78,9 +78,14 @@ public final class JsonRecords {
             return rv;
         }
 
-        final JsonValue recordsStructure = mainStructure.getValue("/records");
+        if (mainStructure == null || !mainStructure.getValueType().equals(JsonValue.ValueType.OBJECT)) {
+            // pass event through as-is if top-level structure is not object or doesn't exist
+            return rv;
+        }
 
-        if (recordsStructure.getValueType().equals(JsonValue.ValueType.ARRAY)) {
+        final JsonValue recordsStructure = mainStructure.asJsonObject().get("records");
+
+        if (recordsStructure != null && recordsStructure.getValueType().equals(JsonValue.ValueType.ARRAY)) {
             final JsonArray recordsArray = recordsStructure.asJsonArray();
             String[] records = new String[recordsArray.size()];
 
@@ -92,7 +97,7 @@ public final class JsonRecords {
             return records;
         }
 
-        // pass event through as-is if "records" is not an array type
+        // pass event through as-is if "records" is not an array type or doesn't exist
         return rv;
     }
 
