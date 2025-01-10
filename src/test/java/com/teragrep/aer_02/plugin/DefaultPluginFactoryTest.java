@@ -43,61 +43,46 @@
  * Teragrep, the applicable Commercial License may apply to this file if you as
  * a licensee so wish it.
  */
-package com.teragrep.aer_02;
+package com.teragrep.aer_02.plugin;
 
-import com.codahale.metrics.Gauge;
-import com.codahale.metrics.MetricRegistry;
-import com.teragrep.aer_02.config.source.PropertySource;
-import com.teragrep.aer_02.config.source.Sourceable;
-import com.teragrep.aer_02.fakes.OutputFake;
-import com.teragrep.aer_02.plugin.DefaultPlugin;
+import com.teragrep.akv_01.plugin.Plugin;
+import com.teragrep.akv_01.plugin.PluginFactory;
+import com.teragrep.akv_01.plugin.PluginFactoryInitialization;
+import com.teragrep.rlo_14.SyslogMessage;
+import jakarta.json.Json;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
 
+import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.HashMap;
-import java.util.Map;
 
-import static com.codahale.metrics.MetricRegistry.name;
-
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
-public class EventDataConsumerTest {
-
-    private final Sourceable configSource = new PropertySource();
+public final class DefaultPluginFactoryTest {
 
     @Test
-    public void testLatencyMetric() {
-        Map<String, Object> partitionContext = new HashMap<>();
-        partitionContext.put("FullyQualifiedNamespace", "eventhub.123");
-        partitionContext.put("EventHubName", "test1");
-        partitionContext.put("ConsumerGroup", "$Default");
-        partitionContext.put("PartitionId", "0");
-        Map<String, Object> props = new HashMap<>();
-        Map<String, Object> systemProps = new HashMap<>();
-        systemProps.put("SequenceNumber", "1");
-        MetricRegistry metricRegistry = new MetricRegistry();
-        EventDataConsumer eventDataConsumer = new EventDataConsumer(
-                configSource,
-                new OutputFake(),
-                new Hostname("localhost").hostname(),
-                metricRegistry
+    void testPluginFactoryCreateObject() {
+        final DefaultPluginFactory factory = new DefaultPluginFactory();
+        final Plugin plugin = Assertions
+                .assertDoesNotThrow(() -> factory.plugin(Json.createObjectBuilder().add("realHostname", "hostname").add("syslogHostname", "hostname").add("syslogAppname", "appname").build().toString()));
+        final ZonedDateTime now = ZonedDateTime.now();
+        final SyslogMessage msg = Assertions
+                .assertDoesNotThrow(
+                        () -> plugin.syslogMessage("msg", new HashMap<>(), now, "", new HashMap<>(), new HashMap<>())
+                );
+        Assertions.assertEquals(DefaultPlugin.class, plugin.getClass());
+        Assertions.assertEquals("msg", msg.getMsg());
+        Assertions.assertEquals(Instant.ofEpochMilli(now.toInstant().toEpochMilli()).toString(), msg.getTimestamp());
+    }
+
+    @Test
+    void testPluginFactoryInitialization() {
+        final PluginFactoryInitialization pluginFactoryInitialization = new PluginFactoryInitialization(
+                "com.teragrep.aer_02.plugin.DefaultPluginFactory"
         );
-
-        final double records = 10;
-        for (int i = 0; i < records; i++) {
-            if (i >= 5) {
-                partitionContext.put("PartitionId", "1");
-            }
-            eventDataConsumer
-                    .accept(new DefaultPlugin("real", "host", "app").syslogMessage("event", partitionContext, ZonedDateTime.now().minusSeconds(10), String.valueOf(i), props, systemProps));
-        }
-
-        // 5 records for each partition
-        Gauge<Long> gauge1 = metricRegistry.gauge(name(EventDataConsumer.class, "latency-seconds", "0"));
-        Gauge<Long> gauge2 = metricRegistry.gauge(name(EventDataConsumer.class, "latency-seconds", "1"));
-
-        Assertions.assertEquals(gauge1.getValue(), 10);
-        Assertions.assertEquals(gauge2.getValue(), 10);
+        final PluginFactory pluginFactory = Assertions.assertDoesNotThrow(pluginFactoryInitialization::pluginFactory);
+        Assertions.assertEquals(DefaultPluginFactory.class, pluginFactory.getClass());
+        final Plugin plugin = Assertions
+                .assertDoesNotThrow(() -> pluginFactory.plugin(Json.createObjectBuilder().add("realHostname", "hostname").add("syslogHostname", "hostname").add("syslogAppname", "appname").build().toString()));
+        Assertions.assertEquals(DefaultPlugin.class, plugin.getClass());
     }
 }

@@ -47,9 +47,14 @@ package com.teragrep.aer_02;
 
 import com.microsoft.azure.functions.*;
 import com.microsoft.azure.functions.annotation.*;
+import com.teragrep.aer_02.config.SyslogConfig;
 import com.teragrep.aer_02.config.source.EnvironmentSource;
 import com.teragrep.aer_02.config.source.Sourceable;
 import com.teragrep.aer_02.json.JsonRecords;
+import com.teragrep.aer_02.json.JsonResourceId;
+import com.teragrep.aer_02.metrics.Report;
+import com.teragrep.akv_01.plugin.*;
+import com.teragrep.rlo_14.SyslogMessage;
 import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.exporter.common.TextFormat;
 
@@ -64,6 +69,14 @@ public class SyslogBridge {
     public SyslogBridge() {
 
     }
+    private Sourceable configSource;
+    private SyslogConfig syslogConfig;
+    private String hostname;
+    private EventDataConsumer consumer;
+    private Report report;
+    private MetricRegistry metricRegistry;
+    private Map<String, Plugin> resourceIdToPluginMap;
+    private boolean initialized = false;
 
     @FunctionName("metrics")
     public HttpResponseMessage metrics(
@@ -131,13 +144,19 @@ public class SyslogBridge {
             );
 
             for (int index = 0; index < events.length; index++) {
-                if (events[index] != null) {
+                final String event = events[index];
+            if (event != null) {
                     final ZonedDateTime et = ZonedDateTime.parse(enqueuedTimeUtcArray.get(index) + "Z"); // needed as the UTC time presented does not have a TZ
-                    context.getLogger().fine("Accepting event: " + events[index]);
-                    final String[] records = new JsonRecords(events[index]).records();
+                    context.getLogger().fine("Accepting event: " + event);
+
+                final String jsonResourceId = new JsonResourceId(event).resourceId();
+                final Plugin plugin = resourceIdToPluginMap.getOrDefault(jsonResourceId, resourceIdToPluginMap.get(""));
+
+                final String[] records = new JsonRecords(event).records();
                     for (final String record : records) {
-                        consumer
-                                .accept(record, partitionContext, et, offsetArray.get(index), propertiesArray[index], systemPropertiesArray[index]);
+                        final SyslogMessage outputMsg = plugin
+                                .syslogMessage(record, partitionContext, et, offsetArray.get(index), propertiesArray[index], systemPropertiesArray[index]);
+                    consumer.accept(outputMsg);
                     }
                 }
                 else {

@@ -49,16 +49,14 @@ import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;
 import com.teragrep.aer_02.config.SyslogConfig;
 import com.teragrep.aer_02.config.source.Sourceable;
-import com.teragrep.rlo_14.Facility;
 import com.teragrep.rlo_14.SDElement;
-import com.teragrep.rlo_14.Severity;
 import com.teragrep.rlo_14.SyslogMessage;
+import com.teragrep.rlo_14.*;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
-import java.time.ZonedDateTime;
-import java.util.Map;
-import java.util.UUID;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import static com.codahale.metrics.MetricRegistry.name;
 
@@ -82,64 +80,36 @@ final class EventDataConsumer {
         this.syslogConfig = new SyslogConfig(configSource);
     }
 
-    public void accept(
-            String eventData,
-            Map<String, Object> partitionContext,
-            ZonedDateTime enqueuedTime,
-            String offset,
-            Map<String, Object> props,
-            Map<String, Object> systemProps
-    ) {
+    public void accept(final SyslogMessage syslogMessage) {
+        final List<SDElement> partitionElements = syslogMessage
+                .getSDElements()
+                .stream()
+                .filter(sdElement -> sdElement.getSdID().equals("aer_02_partition@48577"))
+                .collect(Collectors.toList());
+        if (partitionElements.isEmpty()) {
+            throw new IllegalStateException("SDElement aer_02_partition@48577 not found");
+        }
 
-        String partitionId = String.valueOf(partitionContext.get("PartitionId"));
-        metricRegistry.gauge(name(EventDataConsumer.class, "latency-seconds", partitionId), () -> new Gauge<Long>() {
+        final List<SDParam> partitionParams = partitionElements
+                .get(0)
+                .getSdParams()
+                .stream()
+                .filter(sdParam -> sdParam.getParamName().equals("partition_id"))
+                .collect(Collectors.toList());
+        if (partitionParams.isEmpty()) {
+            throw new IllegalStateException("SDParam partition_id not found in SDElement aer_02_partition@48577");
+        }
 
-            @Override
-            public Long getValue() {
-                return Instant.now().getEpochSecond() - enqueuedTime.toInstant().getEpochSecond();
-            }
-        });
+        final long timestampSecs = Instant.parse(syslogMessage.getTimestamp()).toEpochMilli() / 1000L;
 
-        SDElement sdId = new SDElement("event_id@48577")
-                .addSDParam("uuid", UUID.randomUUID().toString())
-                .addSDParam("hostname", realHostName)
-                .addSDParam("unixtime", Instant.now().toString())
-                .addSDParam("id_source", "aer_02");
+        metricRegistry
+                .gauge(name(EventDataConsumer.class, "latency-seconds", partitionParams.get(0).getParamValue()), () -> new Gauge<Long>() {
 
-        SDElement sdPartition = new SDElement("aer_02_partition@48577")
-                .addSDParam(
-                        "fully_qualified_namespace",
-                        String.valueOf(partitionContext.getOrDefault("FullyQualifiedNamespace", ""))
-                )
-                .addSDParam("eventhub_name", String.valueOf(partitionContext.getOrDefault("EventHubName", "")))
-                .addSDParam("partition_id", String.valueOf(partitionContext.getOrDefault("PartitionId", "")))
-                .addSDParam("consumer_group", String.valueOf(partitionContext.getOrDefault("ConsumerGroup", "")));
-
-        String partitionKey = String.valueOf(systemProps.getOrDefault("PartitionKey", ""));
-
-        SDElement sdEvent = new SDElement("aer_02_event@48577")
-                .addSDParam("offset", offset == null ? "" : offset)
-                .addSDParam("enqueued_time", enqueuedTime == null ? "" : enqueuedTime.toString())
-                .addSDParam("partition_key", partitionKey == null ? "" : partitionKey);
-        props.forEach((key, value) -> sdEvent.addSDParam("property_" + key, value.toString()));
-
-        SDElement sdComponentInfo = new SDElement("aer_02@48577")
-                .addSDParam("timestamp_source", enqueuedTime == null ? "generated" : "timeEnqueued");
-
-        SyslogMessage syslogMessage = new SyslogMessage()
-                .withSeverity(Severity.INFORMATIONAL)
-                .withFacility(Facility.LOCAL0)
-                .withTimestamp(
-                        enqueuedTime == null ? Instant.now().toEpochMilli() : enqueuedTime.toInstant().toEpochMilli()
-                )
-                .withHostname(syslogConfig.hostName())
-                .withAppName(syslogConfig.appName())
-                .withSDElement(sdId)
-                .withSDElement(sdPartition)
-                .withSDElement(sdEvent)
-                .withSDElement(sdComponentInfo)
-                .withMsgId(String.valueOf(systemProps.getOrDefault("SequenceNumber", "0")))
-                .withMsg(eventData);
+                    @Override
+                    public Long getValue() {
+                        return Instant.now().getEpochSecond() - timestampSecs;
+                    }
+                });
 
         output.accept(syslogMessage.toRfc5424SyslogMessage().getBytes(StandardCharsets.UTF_8));
     }

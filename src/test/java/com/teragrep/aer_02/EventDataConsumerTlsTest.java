@@ -51,6 +51,7 @@ import com.teragrep.aer_02.config.source.EnvironmentSource;
 import com.teragrep.aer_02.config.source.Sourceable;
 import com.teragrep.aer_02.fakes.PartitionContextFake;
 import com.teragrep.aer_02.fakes.SystemPropsFake;
+import com.teragrep.aer_02.plugin.DefaultPlugin;
 import com.teragrep.net_01.channel.socket.TLSFactory;
 import com.teragrep.net_01.eventloop.EventLoop;
 import com.teragrep.net_01.eventloop.EventLoopFactory;
@@ -199,7 +200,7 @@ public class EventDataConsumerTlsTest {
 
         for (int i = 0; i < eventDatas.size(); i++) {
             edc
-                    .accept(eventDatas.get(i), pcf.asMap(), ZonedDateTime.parse(enqueuedArray.get(i) + "Z"), offsets.get(i), propsArray[i], sysPropsArray[i]);
+                    .accept((new DefaultPlugin("localhost.localdomain", "localhost.localdomain", "aer-02").syslogMessage(eventDatas.get(i), pcf.asMap(), ZonedDateTime.parse(enqueuedArray.get(i) + "Z"), offsets.get(i), propsArray[i], sysPropsArray[i])));
         }
 
         Assertions.assertEquals(3, messages.size());
