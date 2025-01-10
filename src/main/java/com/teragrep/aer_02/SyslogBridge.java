@@ -48,19 +48,27 @@ package com.teragrep.aer_02;
 import com.codahale.metrics.MetricRegistry;
 import com.microsoft.azure.functions.*;
 import com.microsoft.azure.functions.annotation.*;
+import com.teragrep.aer_02.config.SyslogConfig;
 import com.teragrep.aer_02.config.source.EnvironmentSource;
 import com.teragrep.aer_02.config.source.Sourceable;
 import com.teragrep.aer_02.json.JsonRecords;
+import com.teragrep.aer_02.json.JsonResourceId;
 import com.teragrep.aer_02.metrics.JmxReport;
 import com.teragrep.aer_02.metrics.PrometheusReport;
 import com.teragrep.aer_02.metrics.Report;
 import com.teragrep.aer_02.metrics.Slf4jReport;
 import com.teragrep.aer_02.tls.AzureSSLContextSupplier;
+import com.teragrep.akv_01.json.JsonFile;
+import com.teragrep.akv_01.plugin.*;
+import com.teragrep.rlo_14.SyslogMessage;
 import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.dropwizard.DropwizardExports;
 import io.prometheus.client.exporter.common.TextFormat;
+import jakarta.json.Json;
+import jakarta.json.JsonValue;
 
 import java.io.*;
+import java.lang.reflect.InvocationTargetException;
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
@@ -71,6 +79,8 @@ public class SyslogBridge {
     private EventDataConsumer consumer = null;
     private Report report = null;
     private MetricRegistry metricRegistry = null;
+    private Map<String, PluginFactoryConfig> pluginFactoryConfigs = null;
+    private String defaultPluginFactoryClassName = null;
 
     @FunctionName("metrics")
     public HttpResponseMessage metrics(
@@ -132,9 +142,9 @@ public class SyslogBridge {
             report.start();
         }
 
+        final Sourceable configSource = new EnvironmentSource();
+        final String hostname = new Hostname("localhost").hostname();
         if (consumer == null) {
-            final Sourceable configSource = new EnvironmentSource();
-            final String hostname = new Hostname("localhost").hostname();
 
             if (configSource.source("relp.tls.mode", "none").equals("keyVault")) {
                 consumer = new EventDataConsumer(configSource, hostname, metricRegistry, new AzureSSLContextSupplier());
@@ -144,14 +154,65 @@ public class SyslogBridge {
             }
         }
 
+        if (pluginFactoryConfigs == null) {
+            try {
+                final String configPath = configSource.source("plugins.config.path", "");
+                final PluginMap pluginMap;
+                if (configPath.isEmpty()) {
+                    pluginMap = new PluginMap(
+                            Json
+                                    .createObjectBuilder()
+                                    .add("defaultPluginFactoryClass", "com.teragrep.aer_02.plugin.DefaultPluginFactory")
+                                    .add("resourceIds", JsonValue.EMPTY_JSON_ARRAY)
+                                    .build()
+                    );
+                }
+                else {
+                    pluginMap = new PluginMap(new JsonFile(configPath).asJsonStructure());
+                }
+
+                pluginFactoryConfigs = pluginMap.asUnmodifiableMap();
+                defaultPluginFactoryClassName = pluginMap.defaultPluginFactoryClassName();
+            }
+            catch (IOException e) {
+                context.getLogger().throwing(SyslogBridge.class.getName(), "eventHubTriggerToSyslog", e);
+                throw new UncheckedIOException(e);
+            }
+        }
+
         for (int index = 0; index < events.length; index++) {
             if (events[index] != null) {
+                final String resourceId = new JsonResourceId(events[index]).resourceId();
+                final SyslogConfig syslogConfig = new SyslogConfig(configSource);
+                final PluginFactoryConfig pluginConfig = pluginFactoryConfigs
+                        .getOrDefault(
+                                resourceId,
+                                new PluginFactoryConfigImpl(
+                                        defaultPluginFactoryClassName,
+                                        Json.createObjectBuilder().add("realHostname", hostname).add("syslogHostname", syslogConfig.hostName()).add("syslogAppname", syslogConfig.appName()).build().toString()
+                                )
+                        );
+                final PluginFactory pluginFactory;
+                try {
+                    pluginFactory = new PluginFactoryInitialization(pluginConfig.pluginFactoryClassName())
+                            .pluginFactory();
+                }
+                catch (
+                        ClassNotFoundException | InvocationTargetException | NoSuchMethodException
+                        | InstantiationException | IllegalAccessException e
+                ) {
+                    context.getLogger().throwing(SyslogBridge.class.getName(), "eventHubTriggerToSyslog", e);
+                    throw new IllegalStateException(e);
+                }
+                final Plugin plugin = pluginFactory.plugin(pluginConfig.configPath());
+
                 final ZonedDateTime et = ZonedDateTime.parse(enqueuedTimeUtcArray.get(index) + "Z"); // needed as the UTC time presented does not have a TZ
                 context.getLogger().fine("Accepting event: " + events[index]);
                 final String[] records = new JsonRecords(events[index]).records();
                 for (final String record : records) {
-                    consumer
-                            .accept(record, partitionContext, et, offsetArray.get(index), propertiesArray[index], systemPropertiesArray[index]);
+                    final SyslogMessage outputMsg = plugin
+                            .syslogMessage(record, partitionContext, et, offsetArray.get(index), propertiesArray[index], systemPropertiesArray[index]);
+                    consumer.accept(outputMsg);
                 }
             }
             else {
