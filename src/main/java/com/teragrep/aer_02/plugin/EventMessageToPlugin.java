@@ -46,7 +46,6 @@
 package com.teragrep.aer_02.plugin;
 
 import com.microsoft.azure.functions.ExecutionContext;
-import com.teragrep.aer_02.SyslogBridge;
 import com.teragrep.aer_02.config.SyslogConfig;
 import com.teragrep.aer_02.config.source.Sourceable;
 import com.teragrep.aer_02.json.JsonResourceId;
@@ -101,7 +100,7 @@ public final class EventMessageToPlugin {
                 ClassNotFoundException | InvocationTargetException | NoSuchMethodException | InstantiationException
                 | IllegalAccessException e
         ) {
-            context.getLogger().throwing(SyslogBridge.class.getName(), "toPlugin", e);
+            context.getLogger().throwing(EventMessageToPlugin.class.getName(), "toPlugin", e);
             throw new IllegalStateException(e);
         }
 
