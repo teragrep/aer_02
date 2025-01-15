@@ -121,14 +121,14 @@ final class EventDataConsumer implements AutoCloseable {
             throw new IllegalStateException("SDParam partition_id not found in SDElement aer_02_partition@48577");
         }
 
-        final long timestampMillis = Instant.parse(syslogMessage.getTimestamp()).toEpochMilli();
+        final long timestampSecs = Instant.parse(syslogMessage.getTimestamp()).toEpochMilli() / 1000L;
 
         metricRegistry
                 .gauge(name(EventDataConsumer.class, "latency-seconds", partitionParams.get(0).getParamValue()), () -> new Gauge<Long>() {
 
                     @Override
                     public Long getValue() {
-                        return Instant.now().getEpochSecond() - (timestampMillis / 1000L);
+                        return Instant.now().getEpochSecond() - timestampSecs;
                     }
                 });
 
