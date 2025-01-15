@@ -49,7 +49,7 @@ The project must be deployed as a Function in a Function App. The Function App r
 
 
 |===
-|App Setting |Description |Default value |Possible values
+|Environment variable |Description |Default value |Possible values
 
 |EventHubName
 |Specifies the EventHub name from which to receive the events. Must be provided.
