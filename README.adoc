@@ -45,8 +45,7 @@ Using the `package` lifecycle ensures that the necessary JSON manifests to run t
 
 === Usage in Azure
 
-The project must be deployed as a Function in a Function App. The Function App requires a few App Settings to function
-properly.
+The project must be deployed as a Function in a Function App. The Function App requires or supports the following Environment variables:
 
 
 |===
