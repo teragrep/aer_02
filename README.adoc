@@ -75,22 +75,22 @@ By default, no configuration is loaded and the DefaultPlugin is used for all res
 |RELP_CONNECTION_TIMEOUT
 |Specifies the time to wait before timing out connection in milliseconds.
 |2500
-|milliseconds
+|milliseconds (positive integer)
 
 |RELP_TRANSACTION_READ_TIMEOUT
 |Time to wait for destination to acknowledge sent data in milliseconds. Low values may cause duplicates.
 |1500
-|milliseconds
+|milliseconds (positive integer)
 
 |RELP_TRANSACTION_WRITE_TIMEOUT
 |Time to wait for destination to accept data in milliseconds.
 |1500
-|milliseconds
+|milliseconds (positive integer)
 
 |RELP_CONNECTION_RETRY_INTERVAL
 |Time to wait between reconnection attempts in milliseconds.
 |500
-|milliseconds
+|milliseconds (positive integer)
 
 |RELP_CONNECTION_PORT
 |RELP connection destination port
