@@ -7,7 +7,7 @@
 
 // Add a short description of your project. Tell what your project does and what it's used for.
 
-Allows converting Azure EventHub events to Syslog messages and sending them to a RELP server.
+Allows conversion of Azure EventHub events to Syslog messages and sending them to a RELP server.
 Additional processing of the events can be performed based on the `resourceId` of the event and an assigned `Plugin`.
 
 == Features
