@@ -16,7 +16,7 @@ Additional processing of the events can be performed based on the `resourceId` o
 * Receives events from Azure EventHub using Azure Java Function.
 * Converts said events to Syslog format.
 * Allows sending said Syslog-formatted messages to a RELP server.
-* Allows the usage of certificates from Azure KeyVault for TLS encryption.
+* Allows the usage of a certificate from Azure KeyVault for TLS encryption.
 * Provides HTTPTrigger function for Prometheus metrics.
 * Implements akv_01 library for additional syslog message processing based on `resourceId` from events received from EventHub.
 
