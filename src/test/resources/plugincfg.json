@@ -1,0 +1,10 @@
+{
+  "defaultPluginFactoryClass": "com.teragrep.aer_02.fakes.ThrowingPluginFactory",
+  "resourceIds": [
+    {
+      "resourceId": "123",
+      "pluginFactoryClass": "com.teragrep.aer_02.plugin.DefaultPluginFactory",
+      "pluginFactoryConfig": "dummy.config"
+    }
+  ]
+}
