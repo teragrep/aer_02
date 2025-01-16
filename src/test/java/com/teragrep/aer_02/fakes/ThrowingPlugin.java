@@ -46,12 +46,22 @@
 package com.teragrep.aer_02.fakes;
 
 import com.teragrep.akv_01.plugin.Plugin;
-import com.teragrep.akv_01.plugin.PluginFactory;
+import com.teragrep.rlo_14.SyslogMessage;
 
-public final class ThrowingPluginFactory implements PluginFactory {
+import java.time.ZonedDateTime;
+import java.util.Map;
+
+public final class ThrowingPlugin implements Plugin {
 
     @Override
-    public Plugin plugin(String s) {
-        return new ThrowingPlugin();
+    public SyslogMessage syslogMessage(
+            String s,
+            Map<String, Object> map,
+            ZonedDateTime zonedDateTime,
+            String s1,
+            Map<String, Object> map1,
+            Map<String, Object> map2
+    ) {
+        throw new RuntimeException("test");
     }
 }

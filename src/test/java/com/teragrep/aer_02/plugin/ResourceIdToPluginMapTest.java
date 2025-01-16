@@ -46,73 +46,61 @@
 package com.teragrep.aer_02.plugin;
 
 import com.microsoft.azure.functions.ExecutionContext;
-import com.teragrep.aer_02.config.source.Sourceable;
+import com.teragrep.aer_02.config.SyslogConfig;
 import com.teragrep.aer_02.fakes.ExecutionContextFake;
-import com.teragrep.aer_02.fakes.SourceableFake;
+import com.teragrep.aer_02.fakes.ThrowingPlugin;
+import com.teragrep.akv_01.plugin.Plugin;
 import com.teragrep.akv_01.plugin.PluginFactoryConfig;
 import com.teragrep.akv_01.plugin.PluginFactoryConfigImpl;
-import com.teragrep.rlo_14.SyslogMessage;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import java.time.ZonedDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
-public final class EventMessageToPluginTest {
+public final class ResourceIdToPluginMapTest {
 
     @Test
-    void testNonMatchingResourceId() {
-        final String unrefinedMsg = "{\"resourceId\":\"default\"}";
-        final Sourceable source = new SourceableFake();
+    void testWithOnePluginFactory() {
         final Map<String, PluginFactoryConfig> configs = new HashMap<>();
         configs.put("123", new PluginFactoryConfigImpl("com.teragrep.aer_02.fakes.ThrowingPluginFactory", "path"));
-        final String defaultClass = "com.teragrep.aer_02.plugin.DefaultPluginFactory";
-        final String hostname = "localhost";
         final ExecutionContext context = new ExecutionContextFake();
 
-        final EventMessageToPlugin eventMessageToPlugin = new EventMessageToPlugin(
-                unrefinedMsg,
-                source,
+        final ResourceIdToPluginMap resourceIdToPluginMap = new ResourceIdToPluginMap(
                 configs,
-                defaultClass,
-                hostname,
+                "com.teragrep.aer_02.plugin.DefaultPluginFactory",
+                "host",
+                new SyslogConfig("app", "host"),
                 context
         );
 
-        final SyslogMessage msg = eventMessageToPlugin
-                .toPlugin()
-                .syslogMessage("event", new HashMap<>(), ZonedDateTime.now(), "", new HashMap<>(), new HashMap<>());
-        Assertions.assertEquals("event", msg.getMsg());
-        Assertions.assertEquals("localhost.localdomain", msg.getHostname());
+        Map<String, Plugin> plugins = resourceIdToPluginMap.asUnmodifiableMap();
+        Assertions.assertEquals(2, plugins.size());
+        Assertions.assertTrue(plugins.containsKey("123"));
+        Assertions.assertEquals(ThrowingPlugin.class.getName(), plugins.get("123").getClass().getName());
+        Assertions.assertEquals(DefaultPlugin.class.getName(), plugins.get("").getClass().getName());
     }
 
     @Test
-    void testMatchingResourceId() {
-        final String unrefinedMsg = "{\"resourceId\":\"123\"}";
-        final Sourceable source = new SourceableFake();
+    void testWithNoPluginFactories() {
         final Map<String, PluginFactoryConfig> configs = new HashMap<>();
-        configs.put("123", new PluginFactoryConfigImpl("com.teragrep.aer_02.fakes.ThrowingPluginFactory", "path"));
-        final String defaultClass = "com.teragrep.aer_02.plugin.DefaultPluginFactory";
-        final String hostname = "localhost";
         final ExecutionContext context = new ExecutionContextFake();
-
-        final EventMessageToPlugin eventMessageToPlugin = new EventMessageToPlugin(
-                unrefinedMsg,
-                source,
+        final ResourceIdToPluginMap resourceIdToPluginMap = new ResourceIdToPluginMap(
                 configs,
-                defaultClass,
-                hostname,
+                "com.teragrep.aer_02.plugin.DefaultPluginFactory",
+                "host",
+                new SyslogConfig("app", "host"),
                 context
         );
 
-        final RuntimeException rte = Assertions.assertThrows(RuntimeException.class, eventMessageToPlugin::toPlugin);
-        Assertions.assertEquals("This is a test", rte.getMessage());
+        Map<String, Plugin> plugins = resourceIdToPluginMap.asUnmodifiableMap();
+        Assertions.assertEquals(1, plugins.size());
+        Assertions.assertEquals(DefaultPlugin.class.getName(), plugins.get("").getClass().getName());
     }
 
     @Test
     void testEqualsContract() {
-        EqualsVerifier.forClass(EventMessageToPlugin.class).verify();
+        EqualsVerifier.forClass(ResourceIdToPluginMap.class).verify();
     }
 }

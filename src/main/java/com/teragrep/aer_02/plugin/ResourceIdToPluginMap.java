@@ -47,64 +47,68 @@ package com.teragrep.aer_02.plugin;
 
 import com.microsoft.azure.functions.ExecutionContext;
 import com.teragrep.aer_02.config.SyslogConfig;
-import com.teragrep.aer_02.config.source.Sourceable;
-import com.teragrep.aer_02.json.JsonResourceId;
 import com.teragrep.akv_01.plugin.*;
 import jakarta.json.Json;
 
 import java.lang.reflect.InvocationTargetException;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
-public final class EventMessageToPlugin {
+public final class ResourceIdToPluginMap {
 
-    private final String unrefinedMsg;
-    private final Sourceable configSource;
     private final Map<String, PluginFactoryConfig> pluginFactoryConfigs;
     private final String defaultPluginFactoryClassName;
-    private final String hostname;
+    private final String realHostname;
+    private final SyslogConfig syslogConfig;
     private final ExecutionContext context;
 
-    public EventMessageToPlugin(
-            final String unrefinedMsg,
-            final Sourceable configSource,
+    public ResourceIdToPluginMap(
             final Map<String, PluginFactoryConfig> pluginFactoryConfigs,
             final String defaultPluginFactoryClassName,
-            final String hostname,
+            final String realHostname,
+            final SyslogConfig syslogConfig,
             final ExecutionContext context
     ) {
-        this.unrefinedMsg = unrefinedMsg;
-        this.configSource = configSource;
         this.pluginFactoryConfigs = pluginFactoryConfigs;
         this.defaultPluginFactoryClassName = defaultPluginFactoryClassName;
-        this.hostname = hostname;
+        this.realHostname = realHostname;
+        this.syslogConfig = syslogConfig;
         this.context = context;
     }
 
-    public Plugin toPlugin() {
-        final String resourceId = new JsonResourceId(unrefinedMsg).resourceId();
-        final SyslogConfig syslogConfig = new SyslogConfig(configSource);
-        final PluginFactoryConfig pluginConfig = pluginFactoryConfigs
-                .getOrDefault(
-                        resourceId,
-                        new PluginFactoryConfigImpl(
-                                defaultPluginFactoryClassName,
-                                Json.createObjectBuilder().add("realHostname", hostname).add("syslogHostname", syslogConfig.hostName()).add("syslogAppname", syslogConfig.appName()).build().toString()
+    public Map<String, Plugin> asUnmodifiableMap() {
+        final Map<String, Plugin> rv = new HashMap<>();
+        pluginFactoryConfigs.forEach((id, cfg) -> rv.put(id, newPlugin(cfg)));
+
+        // default plugin
+        rv
+                .put(
+                        "",
+                        newPlugin(
+                                new PluginFactoryConfigImpl(
+                                        defaultPluginFactoryClassName,
+                                        Json.createObjectBuilder().add("realHostname", realHostname).add("syslogHostname", syslogConfig.hostName()).add("syslogAppname", syslogConfig.appName()).build().toString()
+                                )
                         )
                 );
-        final PluginFactory pluginFactory;
+        return Collections.unmodifiableMap(rv);
+    }
+
+    private Plugin newPlugin(final PluginFactoryConfig cfg) {
         try {
-            pluginFactory = new PluginFactoryInitialization(pluginConfig.pluginFactoryClassName()).pluginFactory();
+            return new PluginFactoryInitialization(cfg.pluginFactoryClassName())
+                    .pluginFactory()
+                    .plugin(cfg.configPath());
         }
         catch (
                 ClassNotFoundException | InvocationTargetException | NoSuchMethodException | InstantiationException
                 | IllegalAccessException e
         ) {
-            context.getLogger().throwing(EventMessageToPlugin.class.getName(), "toPlugin", e);
+            context.getLogger().throwing(ResourceIdToPluginMap.class.getName(), "asUnmodifiableMap", e);
             throw new IllegalStateException(e);
         }
-
-        return pluginFactory.plugin(pluginConfig.configPath());
     }
 
     @Override
@@ -112,14 +116,14 @@ public final class EventMessageToPlugin {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        EventMessageToPlugin that = (EventMessageToPlugin) o;
-        return Objects.equals(unrefinedMsg, that.unrefinedMsg) && Objects.equals(configSource, that.configSource)
-                && Objects.equals(pluginFactoryConfigs, that.pluginFactoryConfigs) && Objects.equals(defaultPluginFactoryClassName, that.defaultPluginFactoryClassName) && Objects.equals(hostname, that.hostname) && Objects.equals(context, that.context);
+        ResourceIdToPluginMap that = (ResourceIdToPluginMap) o;
+        return Objects.equals(pluginFactoryConfigs, that.pluginFactoryConfigs) && Objects
+                .equals(defaultPluginFactoryClassName, that.defaultPluginFactoryClassName)
+                && Objects.equals(realHostname, that.realHostname) && Objects.equals(syslogConfig, that.syslogConfig) && Objects.equals(context, that.context);
     }
 
     @Override
     public int hashCode() {
-        return Objects
-                .hash(unrefinedMsg, configSource, pluginFactoryConfigs, defaultPluginFactoryClassName, hostname, context);
+        return Objects.hash(pluginFactoryConfigs, defaultPluginFactoryClassName, realHostname, syslogConfig, context);
     }
 }
