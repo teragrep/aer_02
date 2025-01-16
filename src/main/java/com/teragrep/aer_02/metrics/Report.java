@@ -48,4 +48,6 @@ package com.teragrep.aer_02.metrics;
 public interface Report extends AutoCloseable {
 
     public abstract void start();
+
+    public abstract void close();
 }

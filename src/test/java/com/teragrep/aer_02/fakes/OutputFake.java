@@ -50,7 +50,7 @@ import com.teragrep.aer_02.Output;
 public final class OutputFake implements Output {
 
     @Override
-    public void close() throws Exception {
+    public void close() {
         // No functionality for a fake
     }
 

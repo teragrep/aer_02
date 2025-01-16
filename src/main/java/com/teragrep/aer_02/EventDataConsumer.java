@@ -168,7 +168,7 @@ final class EventDataConsumer implements AutoCloseable {
     }
 
     @Override
-    public void close() throws Exception {
+    public void close() {
         output.close();
     }
 }
