@@ -75,7 +75,7 @@ public final class Slf4jReport implements Report {
     }
 
     @Override
-    public void close() throws Exception {
+    public void close() {
         report.close();
         slf4jReporter.close();
     }

@@ -69,7 +69,7 @@ public final class JmxReport implements Report {
     }
 
     @Override
-    public void close() throws Exception {
+    public void close() {
         report.close();
         jmxReporter.close();
     }

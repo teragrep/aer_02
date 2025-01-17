@@ -71,6 +71,7 @@ public class SyslogBridge {
     private EventDataConsumer consumer = null;
     private Report report = null;
     private MetricRegistry metricRegistry = null;
+    private boolean initialized = false;
 
     @FunctionName("metrics")
     public HttpResponseMessage metrics(
@@ -120,19 +121,14 @@ public class SyslogBridge {
         context.getLogger().fine("eventHubTriggerToSyslog triggered");
         context.getLogger().fine("Got events: " + events.length);
 
-        if (metricRegistry == null) {
+        if (!initialized) {
             metricRegistry = new MetricRegistry();
-        }
-
-        if (report == null) {
             report = new JmxReport(
                     new Slf4jReport(new PrometheusReport(new DropwizardExports(metricRegistry)), metricRegistry),
                     metricRegistry
             );
             report.start();
-        }
 
-        if (consumer == null) {
             final Sourceable configSource = new EnvironmentSource();
             final String hostname = new Hostname("localhost").hostname();
 
@@ -142,6 +138,19 @@ public class SyslogBridge {
             else {
                 consumer = new EventDataConsumer(configSource, hostname, metricRegistry);
             }
+
+            final Thread shutdownHook = new Thread(() -> {
+                if (consumer != null) {
+                    consumer.close();
+                }
+                if (report != null) {
+                    report.close();
+                }
+            });
+
+            Runtime.getRuntime().addShutdownHook(shutdownHook);
+
+            initialized = true;
         }
 
         for (int index = 0; index < events.length; index++) {
