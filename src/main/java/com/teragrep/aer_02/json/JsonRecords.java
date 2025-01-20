@@ -70,12 +70,14 @@ public final class JsonRecords {
         };
 
         final JsonStructure mainStructure;
-        try (final JsonReader reader = Json.createReader(new StringReader(event))) {
-            mainStructure = reader.read();
-        }
-        catch (JsonParsingException e) {
-            // pass event through as-is if JSON parsing fails
-            return rv;
+        try (final StringReader stringReader = new StringReader(event)) {
+            try (final JsonReader reader = Json.createReader(stringReader)) {
+                mainStructure = reader.read();
+            }
+            catch (JsonParsingException e) {
+                // pass event through as-is if JSON parsing fails
+                return rv;
+            }
         }
 
         if (mainStructure == null || !mainStructure.getValueType().equals(JsonValue.ValueType.OBJECT)) {
