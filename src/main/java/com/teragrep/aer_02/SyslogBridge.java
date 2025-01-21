@@ -48,6 +48,7 @@ package com.teragrep.aer_02;
 import com.codahale.metrics.MetricRegistry;
 import com.microsoft.azure.functions.*;
 import com.microsoft.azure.functions.annotation.*;
+import com.teragrep.aer_02.config.RelpConnectionConfig;
 import com.teragrep.aer_02.config.source.EnvironmentSource;
 import com.teragrep.aer_02.config.source.Sourceable;
 import com.teragrep.aer_02.json.JsonRecords;
@@ -65,12 +66,14 @@ import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class SyslogBridge {
 
-    private EventDataConsumer consumer = null;
-    private Report report = null;
-    private MetricRegistry metricRegistry = null;
+    private final Lock initLock = new ReentrantLock();
+    private final MetricRegistry metricRegistry = new MetricRegistry();;
+    private DefaultOutput defaultOutput = null;
     private boolean initialized = false;
 
     @FunctionName("metrics")
@@ -121,37 +124,50 @@ public class SyslogBridge {
         context.getLogger().fine("eventHubTriggerToSyslog triggered");
         context.getLogger().fine("Got events: " + events.length);
 
-        if (!initialized) {
-            metricRegistry = new MetricRegistry();
-            report = new JmxReport(
-                    new Slf4jReport(new PrometheusReport(new DropwizardExports(metricRegistry)), metricRegistry),
-                    metricRegistry
-            );
-            report.start();
+        final Sourceable configSource = new EnvironmentSource();
+        final String hostname = new Hostname("localhost").hostname();
 
-            final Sourceable configSource = new EnvironmentSource();
-            final String hostname = new Hostname("localhost").hostname();
+        try {
+            initLock.lock();
+            if (!initialized) {
+                final Report report = new JmxReport(
+                        new Slf4jReport(new PrometheusReport(new DropwizardExports(metricRegistry)), metricRegistry),
+                        metricRegistry
+                );
+                report.start();
 
-            if (configSource.source("relp.tls.mode", "none").equals("keyVault")) {
-                consumer = new EventDataConsumer(configSource, hostname, metricRegistry, new AzureSSLContextSupplier());
-            }
-            else {
-                consumer = new EventDataConsumer(configSource, hostname, metricRegistry);
-            }
+                if (configSource.source("relp.tls.mode", "none").equals("keyVault")) {
 
-            final Thread shutdownHook = new Thread(() -> {
-                if (consumer != null) {
-                    consumer.close();
+                    defaultOutput = new DefaultOutput(
+                            "defaultOutput",
+                            new RelpConnectionConfig(configSource),
+                            metricRegistry,
+                            new AzureSSLContextSupplier()
+                    );
                 }
-                if (report != null) {
+                else {
+                    defaultOutput = new DefaultOutput(
+                            "defaultOutput",
+                            new RelpConnectionConfig(configSource),
+                            metricRegistry
+                    );
+                }
+
+                final Thread shutdownHook = new Thread(() -> {
+                    defaultOutput.close();
                     report.close();
-                }
-            });
+                });
 
-            Runtime.getRuntime().addShutdownHook(shutdownHook);
+                Runtime.getRuntime().addShutdownHook(shutdownHook);
 
-            initialized = true;
+                initialized = true;
+            }
         }
+        finally {
+            initLock.unlock();
+        }
+
+        EventDataConsumer consumer = new EventDataConsumer(configSource, defaultOutput, hostname, metricRegistry);
 
         for (int index = 0; index < events.length; index++) {
             if (events[index] != null) {
