@@ -178,7 +178,5 @@ public class SyslogBridge {
                 context.getLogger().warning("eventHubTriggerToSyslog event data is null");
             }
         }
-
-        consumer.close();
     }
 }

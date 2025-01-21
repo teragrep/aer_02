@@ -64,7 +64,7 @@ import java.util.UUID;
 
 import static com.codahale.metrics.MetricRegistry.name;
 
-final class EventDataConsumer implements AutoCloseable {
+final class EventDataConsumer {
 
     // Note: Checkpointing is handled automatically.
     private final Output output;
@@ -165,10 +165,5 @@ final class EventDataConsumer implements AutoCloseable {
                 .withMsg(eventData);
 
         output.accept(syslogMessage.toRfc5424SyslogMessage().getBytes(StandardCharsets.UTF_8));
-    }
-
-    @Override
-    public void close() {
-        output.close();
     }
 }
