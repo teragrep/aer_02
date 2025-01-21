@@ -47,14 +47,12 @@ package com.teragrep.aer_02;
 
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;
-import com.teragrep.aer_02.config.RelpConnectionConfig;
 import com.teragrep.aer_02.config.SyslogConfig;
 import com.teragrep.aer_02.config.source.Sourceable;
 import com.teragrep.rlo_14.Facility;
 import com.teragrep.rlo_14.SDElement;
 import com.teragrep.rlo_14.Severity;
 import com.teragrep.rlo_14.SyslogMessage;
-import com.teragrep.rlp_01.client.SSLContextSupplier;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
@@ -71,27 +69,6 @@ final class EventDataConsumer {
     private final String realHostName;
     private final SyslogConfig syslogConfig;
     private final MetricRegistry metricRegistry;
-
-    EventDataConsumer(
-            final Sourceable configSource,
-            final String hostname,
-            final MetricRegistry metricRegistry,
-            final SSLContextSupplier sslContextSupplier
-    ) {
-        this(
-                configSource,
-                new DefaultOutput("defaultOutput", new RelpConnectionConfig(configSource), metricRegistry, sslContextSupplier), hostname, metricRegistry
-        );
-    }
-
-    EventDataConsumer(final Sourceable configSource, final String hostname, final MetricRegistry metricRegistry) {
-        this(
-                configSource,
-                new DefaultOutput("defaultOutput", new RelpConnectionConfig(configSource), metricRegistry),
-                hostname,
-                metricRegistry
-        );
-    }
 
     EventDataConsumer(
             final Sourceable configSource,

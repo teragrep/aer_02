@@ -136,11 +136,22 @@ public class SyslogBridge {
                 );
                 report.start();
 
-                defaultOutput = new DefaultOutput(
-                        "defaultOutput",
-                        new RelpConnectionConfig(configSource),
-                        metricRegistry
-                );
+                if (configSource.source("relp.tls.mode", "none").equals("keyVault")) {
+
+                    defaultOutput = new DefaultOutput(
+                            "defaultOutput",
+                            new RelpConnectionConfig(configSource),
+                            metricRegistry,
+                            new AzureSSLContextSupplier()
+                    );
+                }
+                else {
+                    defaultOutput = new DefaultOutput(
+                            "defaultOutput",
+                            new RelpConnectionConfig(configSource),
+                            metricRegistry
+                    );
+                }
 
                 final Thread shutdownHook = new Thread(() -> {
                     defaultOutput.close();
@@ -156,13 +167,7 @@ public class SyslogBridge {
             initLock.unlock();
         }
 
-        EventDataConsumer consumer;
-        if (configSource.source("relp.tls.mode", "none").equals("keyVault")) {
-            consumer = new EventDataConsumer(configSource, hostname, metricRegistry, new AzureSSLContextSupplier());
-        }
-        else {
-            consumer = new EventDataConsumer(configSource, defaultOutput, hostname, metricRegistry);
-        }
+        EventDataConsumer consumer = new EventDataConsumer(configSource, defaultOutput, hostname, metricRegistry);
 
         for (int index = 0; index < events.length; index++) {
             if (events[index] != null) {
