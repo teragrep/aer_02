@@ -54,6 +54,9 @@ import com.teragrep.rlp_01.pool.UnboundPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Implementation of an shareable output. Required to be thread-safe.
+ */
 final class DefaultOutput implements Output {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultOutput.class);
