@@ -182,12 +182,7 @@ public class EventDataConsumerTlsTest {
                 sslContextSupplier
         );
 
-        final EventDataConsumer edc = new EventDataConsumer(
-                configSource,
-                defaultOutput,
-                "localhost",
-                new MetricRegistry()
-        );
+        final EventDataConsumer edc = new EventDataConsumer(configSource, defaultOutput, "localhost", metricRegistry);
 
         // Fake data
         PartitionContextFake pcf = new PartitionContextFake("eventhub.123", "test1", "$Default", "0");
