@@ -92,8 +92,6 @@ public class EventDataConsumerTest {
                     .accept("event", partitionContext, ZonedDateTime.now().minusSeconds(10), String.valueOf(i), props, systemProps);
         }
 
-        Assertions.assertDoesNotThrow(eventDataConsumer::close);
-
         // 5 records for each partition
         Gauge<Long> gauge1 = metricRegistry.gauge(name(EventDataConsumer.class, "latency-seconds", "0"));
         Gauge<Long> gauge2 = metricRegistry.gauge(name(EventDataConsumer.class, "latency-seconds", "1"));

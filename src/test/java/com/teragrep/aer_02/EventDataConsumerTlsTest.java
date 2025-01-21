@@ -46,7 +46,9 @@
 package com.teragrep.aer_02;
 
 import com.codahale.metrics.MetricRegistry;
+import com.teragrep.aer_02.config.RelpConnectionConfig;
 import com.teragrep.aer_02.config.source.EnvironmentSource;
+import com.teragrep.aer_02.config.source.Sourceable;
 import com.teragrep.aer_02.fakes.PartitionContextFake;
 import com.teragrep.aer_02.fakes.SystemPropsFake;
 import com.teragrep.net_01.channel.socket.TLSFactory;
@@ -145,33 +147,46 @@ public class EventDataConsumerTlsTest {
 
     @Test
     void testSyslogBridgeTls() {
-        final EventDataConsumer edc = new EventDataConsumer(
-                new EnvironmentSource(),
-                "localhost",
-                new MetricRegistry(),
-                new SSLContextSupplier() {
+        SSLContextSupplier sslContextSupplier = new SSLContextSupplier() {
 
-                    @Override
-                    public SSLContext get() {
-                        SSLContext rv;
-                        try {
-                            rv = InternalSSLContextFactory
-                                    .authenticatedContext(
-                                            "src/test/resources/keystore-client.jks",
-                                            "src/test/resources/truststore.jks", "changeit", "changeit", "TLSv1.3"
-                                    );
-                        }
-                        catch (GeneralSecurityException | IOException e) {
-                            throw new RuntimeException(e);
-                        }
-                        return rv;
-                    }
-
-                    @Override
-                    public boolean isStub() {
-                        return false;
-                    }
+            @Override
+            public SSLContext get() {
+                SSLContext rv;
+                try {
+                    rv = InternalSSLContextFactory
+                            .authenticatedContext(
+                                    "src/test/resources/keystore-client.jks", "src/test/resources/truststore.jks",
+                                    "changeit", "changeit", "TLSv1.3"
+                            );
                 }
+                catch (GeneralSecurityException | IOException e) {
+                    throw new RuntimeException(e);
+                }
+                return rv;
+            }
+
+            @Override
+            public boolean isStub() {
+                return false;
+            }
+        };
+
+        MetricRegistry metricRegistry = new MetricRegistry();
+
+        Sourceable configSource = new EnvironmentSource();
+
+        DefaultOutput defaultOutput = new DefaultOutput(
+                "defaultOutput",
+                new RelpConnectionConfig(configSource),
+                metricRegistry,
+                sslContextSupplier
+        );
+
+        final EventDataConsumer edc = new EventDataConsumer(
+                configSource,
+                defaultOutput,
+                "localhost",
+                new MetricRegistry()
         );
 
         // Fake data
@@ -206,7 +221,6 @@ public class EventDataConsumerTlsTest {
         }
 
         Assertions.assertEquals(3, loops);
-        Assertions.assertDoesNotThrow(edc::close);
     }
 
     private static class InternalSSLContextFactory {
