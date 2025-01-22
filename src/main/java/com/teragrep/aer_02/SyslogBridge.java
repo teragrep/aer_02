@@ -131,20 +131,24 @@ public class SyslogBridge {
             try {
                 initLock.lock();
                 if (!initialized) {
-                    final Report report = new JmxReport(new Slf4jReport(
-                            new PrometheusReport(new DropwizardExports(metricRegistry)), metricRegistry),
-                            metricRegistry
+                    final Report report = new JmxReport(
+                            new Slf4jReport(new PrometheusReport(new DropwizardExports(metricRegistry)), metricRegistry), metricRegistry
                     );
                     report.start();
 
                     if (configSource.source("relp.tls.mode", "none").equals("keyVault")) {
 
-                        defaultOutput = new DefaultOutput("defaultOutput", new RelpConnectionConfig(configSource),
-                                metricRegistry, new AzureSSLContextSupplier()
+                        defaultOutput = new DefaultOutput(
+                                "defaultOutput",
+                                new RelpConnectionConfig(configSource),
+                                metricRegistry,
+                                new AzureSSLContextSupplier()
                         );
                     }
                     else {
-                        defaultOutput = new DefaultOutput("defaultOutput", new RelpConnectionConfig(configSource),
+                        defaultOutput = new DefaultOutput(
+                                "defaultOutput",
+                                new RelpConnectionConfig(configSource),
                                 metricRegistry
                         );
                     }
@@ -167,15 +171,12 @@ public class SyslogBridge {
 
             for (int index = 0; index < events.length; index++) {
                 if (events[index] != null) {
-                    final ZonedDateTime et = ZonedDateTime.parse(enqueuedTimeUtcArray.get(
-                            index) + "Z"); // needed as the UTC time presented does not have a TZ
+                    final ZonedDateTime et = ZonedDateTime.parse(enqueuedTimeUtcArray.get(index) + "Z"); // needed as the UTC time presented does not have a TZ
                     context.getLogger().fine("Accepting event: " + events[index]);
                     final String[] records = new JsonRecords(events[index]).records();
                     for (final String record : records) {
-                        consumer.accept(
-                                record, partitionContext, et, offsetArray.get(index), propertiesArray[index],
-                                systemPropertiesArray[index]
-                        );
+                        consumer
+                                .accept(record, partitionContext, et, offsetArray.get(index), propertiesArray[index], systemPropertiesArray[index]);
                     }
                 }
                 else {
