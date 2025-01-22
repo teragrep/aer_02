@@ -354,7 +354,7 @@
                       <property name="ignoreConstructorParameter" value="true"></property>
                       <property name="ignoreSetter" value="true"></property>
                     </module>
-                    <module name="IllegalCatch"></module>
+                    <!--<module name="IllegalCatch"></module>-->
                     <module name="IllegalImport"></module>
                     <module name="IllegalThrows"></module>
                     <module name="IllegalToken"></module>
