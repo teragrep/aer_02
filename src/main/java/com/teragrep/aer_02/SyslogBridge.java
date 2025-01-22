@@ -121,67 +121,71 @@ public class SyslogBridge {
             @BindingName("OffsetArray") List<String> offsetArray,
             ExecutionContext context
     ) {
-        context.getLogger().fine("eventHubTriggerToSyslog triggered");
-        context.getLogger().fine("Got events: " + events.length);
-
-        final Sourceable configSource = new EnvironmentSource();
-        final String hostname = new Hostname("localhost").hostname();
-
         try {
-            initLock.lock();
-            if (!initialized) {
-                final Report report = new JmxReport(
-                        new Slf4jReport(new PrometheusReport(new DropwizardExports(metricRegistry)), metricRegistry),
-                        metricRegistry
-                );
-                report.start();
+            context.getLogger().fine("eventHubTriggerToSyslog triggered");
+            context.getLogger().fine("Got events: " + events.length);
 
-                if (configSource.source("relp.tls.mode", "none").equals("keyVault")) {
+            final Sourceable configSource = new EnvironmentSource();
+            final String hostname = new Hostname("localhost").hostname();
 
-                    defaultOutput = new DefaultOutput(
-                            "defaultOutput",
-                            new RelpConnectionConfig(configSource),
-                            metricRegistry,
-                            new AzureSSLContextSupplier()
-                    );
-                }
-                else {
-                    defaultOutput = new DefaultOutput(
-                            "defaultOutput",
-                            new RelpConnectionConfig(configSource),
+            try {
+                initLock.lock();
+                if (!initialized) {
+                    final Report report = new JmxReport(new Slf4jReport(
+                            new PrometheusReport(new DropwizardExports(metricRegistry)), metricRegistry),
                             metricRegistry
                     );
-                }
+                    report.start();
 
-                final Thread shutdownHook = new Thread(() -> {
-                    defaultOutput.close();
-                    report.close();
-                });
+                    if (configSource.source("relp.tls.mode", "none").equals("keyVault")) {
 
-                Runtime.getRuntime().addShutdownHook(shutdownHook);
+                        defaultOutput = new DefaultOutput("defaultOutput", new RelpConnectionConfig(configSource),
+                                metricRegistry, new AzureSSLContextSupplier()
+                        );
+                    }
+                    else {
+                        defaultOutput = new DefaultOutput("defaultOutput", new RelpConnectionConfig(configSource),
+                                metricRegistry
+                        );
+                    }
 
-                initialized = true;
-            }
-        }
-        finally {
-            initLock.unlock();
-        }
+                    final Thread shutdownHook = new Thread(() -> {
+                        defaultOutput.close();
+                        report.close();
+                    });
 
-        EventDataConsumer consumer = new EventDataConsumer(configSource, defaultOutput, hostname, metricRegistry);
+                    Runtime.getRuntime().addShutdownHook(shutdownHook);
 
-        for (int index = 0; index < events.length; index++) {
-            if (events[index] != null) {
-                final ZonedDateTime et = ZonedDateTime.parse(enqueuedTimeUtcArray.get(index) + "Z"); // needed as the UTC time presented does not have a TZ
-                context.getLogger().fine("Accepting event: " + events[index]);
-                final String[] records = new JsonRecords(events[index]).records();
-                for (final String record : records) {
-                    consumer
-                            .accept(record, partitionContext, et, offsetArray.get(index), propertiesArray[index], systemPropertiesArray[index]);
+                    initialized = true;
                 }
             }
-            else {
-                context.getLogger().warning("eventHubTriggerToSyslog event data is null");
+            finally {
+                initLock.unlock();
             }
+
+            EventDataConsumer consumer = new EventDataConsumer(configSource, defaultOutput, hostname, metricRegistry);
+
+            for (int index = 0; index < events.length; index++) {
+                if (events[index] != null) {
+                    final ZonedDateTime et = ZonedDateTime.parse(enqueuedTimeUtcArray.get(
+                            index) + "Z"); // needed as the UTC time presented does not have a TZ
+                    context.getLogger().fine("Accepting event: " + events[index]);
+                    final String[] records = new JsonRecords(events[index]).records();
+                    for (final String record : records) {
+                        consumer.accept(
+                                record, partitionContext, et, offsetArray.get(index), propertiesArray[index],
+                                systemPropertiesArray[index]
+                        );
+                    }
+                }
+                else {
+                    context.getLogger().warning("eventHubTriggerToSyslog event data is null");
+                }
+            }
+        }
+        catch (Throwable t) {
+            context.getLogger().severe("exiting because caught Throwable: " + t);
+            System.exit(1);
         }
     }
 }
