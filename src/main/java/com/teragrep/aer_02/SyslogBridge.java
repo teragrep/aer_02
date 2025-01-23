@@ -119,7 +119,8 @@ public class SyslogBridge {
 
             context.getLogger().info("initializing at " + this);
 
-            final InitializationOnDemandHolder.LazyInstance lazyInstance = InitializationOnDemandHolder.lazyInstance();
+            final InitializationOnDemandHolder.LazyHolder.LazyInstance lazyInstance = InitializationOnDemandHolder
+                    .lazyInstance();
             final DefaultOutput defaultOutput = lazyInstance.defaultOutput();
             context.getLogger().info("initialized at " + this);
 
