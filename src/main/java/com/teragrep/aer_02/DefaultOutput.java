@@ -51,30 +51,31 @@ import com.teragrep.rlp_01.RelpBatch;
 import com.teragrep.rlp_01.client.*;
 import com.teragrep.rlp_01.pool.Pool;
 import com.teragrep.rlp_01.pool.UnboundPool;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.util.logging.Logger;
 
 /**
  * Implementation of an shareable output. Required to be thread-safe.
  */
 final class DefaultOutput implements Output {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(DefaultOutput.class);
-
     private final Pool<IManagedRelpConnection> relpConnectionPool;
     private final String relpAddress;
     private final int relpPort;
+    private final Logger logger;
 
     DefaultOutput(
+            Logger logger,
             String name,
             RelpConnectionConfig relpConnectionConfig,
             MetricRegistry metricRegistry,
             SSLContextSupplier sslContextSupplier
     ) {
         this(
+                logger,
                 relpConnectionConfig,
                 new UnboundPool<>(
                         new ManagedRelpConnectionWithMetricsFactory(
+                                logger,
                                 relpConnectionConfig.asRelpConfig(),
                                 name,
                                 metricRegistry,
@@ -86,11 +87,18 @@ final class DefaultOutput implements Output {
         );
     }
 
-    DefaultOutput(String name, RelpConnectionConfig relpConnectionConfig, MetricRegistry metricRegistry) {
+    DefaultOutput(
+            Logger logger,
+            String name,
+            RelpConnectionConfig relpConnectionConfig,
+            MetricRegistry metricRegistry
+    ) {
         this(
+                logger,
                 relpConnectionConfig,
                 new UnboundPool<>(
                         new ManagedRelpConnectionWithMetricsFactory(
+                                logger,
                                 relpConnectionConfig.asRelpConfig(),
                                 name,
                                 metricRegistry,
@@ -101,11 +109,17 @@ final class DefaultOutput implements Output {
         );
     }
 
-    DefaultOutput(RelpConnectionConfig relpConnectionConfig, Pool<IManagedRelpConnection> relpConnectionPool) {
+    DefaultOutput(
+            Logger logger,
+            RelpConnectionConfig relpConnectionConfig,
+            Pool<IManagedRelpConnection> relpConnectionPool
+    ) {
         this.relpAddress = relpConnectionConfig.relpAddress();
         this.relpPort = relpConnectionConfig.relpPort();
 
         this.relpConnectionPool = relpConnectionPool;
+        this.logger = logger;
+        logger.info("DefaultOutput constructor done");
     }
 
     @Override

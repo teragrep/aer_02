@@ -86,6 +86,7 @@ import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.logging.Logger;
 
 public class EventDataConsumerTlsTest {
 
@@ -176,6 +177,7 @@ public class EventDataConsumerTlsTest {
         Sourceable configSource = new EnvironmentSource();
 
         DefaultOutput defaultOutput = new DefaultOutput(
+                Logger.getAnonymousLogger(),
                 "defaultOutput",
                 new RelpConnectionConfig(configSource),
                 metricRegistry,

@@ -76,6 +76,10 @@ public class SyslogBridge {
     private DefaultOutput defaultOutput = null;
     private boolean initialized = false;
 
+    public SyslogBridge() {
+
+    }
+
     @FunctionName("metrics")
     public HttpResponseMessage metrics(
             @HttpTrigger(
@@ -131,6 +135,7 @@ public class SyslogBridge {
             try {
                 initLock.lock();
                 if (!initialized) {
+                    context.getLogger().info("initializing at " + this);
                     final Report report = new JmxReport(
                             new Slf4jReport(new PrometheusReport(new DropwizardExports(metricRegistry)), metricRegistry), metricRegistry
                     );
@@ -139,6 +144,7 @@ public class SyslogBridge {
                     if (configSource.source("relp.tls.mode", "none").equals("keyVault")) {
 
                         defaultOutput = new DefaultOutput(
+                                context.getLogger(),
                                 "defaultOutput",
                                 new RelpConnectionConfig(configSource),
                                 metricRegistry,
@@ -147,6 +153,7 @@ public class SyslogBridge {
                     }
                     else {
                         defaultOutput = new DefaultOutput(
+                                context.getLogger(),
                                 "defaultOutput",
                                 new RelpConnectionConfig(configSource),
                                 metricRegistry
@@ -161,6 +168,7 @@ public class SyslogBridge {
                     Runtime.getRuntime().addShutdownHook(shutdownHook);
 
                     initialized = true;
+                    context.getLogger().info("initialized at " + this);
                 }
             }
             finally {
