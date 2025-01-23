@@ -66,15 +66,8 @@ import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
 public class SyslogBridge {
-
-    private final Lock initLock = new ReentrantLock();
-    private final MetricRegistry metricRegistry = new MetricRegistry();;
-    private DefaultOutput defaultOutput = null;
-    private boolean initialized = false;
 
     public SyslogBridge() {
 
@@ -132,50 +125,40 @@ public class SyslogBridge {
             final Sourceable configSource = new EnvironmentSource();
             final String hostname = new Hostname("localhost").hostname();
 
-            try {
-                initLock.lock();
-                if (!initialized) {
-                    context.getLogger().info("initializing at " + this);
-                    final Report report = new JmxReport(
-                            new Slf4jReport(new PrometheusReport(new DropwizardExports(metricRegistry)), metricRegistry), metricRegistry
-                    );
-                    report.start();
+            final MetricRegistry metricRegistry = new MetricRegistry();
+            ;
 
-                    if (configSource.source("relp.tls.mode", "none").equals("keyVault")) {
-                        context.getLogger().info("connection tls enabled");
+            context.getLogger().info("initializing at " + this);
 
-                        defaultOutput = new DefaultOutput(
-                                context.getLogger(),
-                                "defaultOutput",
-                                new RelpConnectionConfig(configSource),
-                                metricRegistry,
-                                new AzureSSLContextSupplier()
-                        );
-                    }
-                    else {
-                        context.getLogger().info("connection tls disabled");
-                        defaultOutput = new DefaultOutput(
-                                context.getLogger(),
-                                "defaultOutput",
-                                new RelpConnectionConfig(configSource),
-                                metricRegistry
-                        );
-                    }
+            final Report report = new JmxReport(
+                    new Slf4jReport(new PrometheusReport(new DropwizardExports(metricRegistry)), metricRegistry),
+                    metricRegistry
+            );
+            report.start();
 
-                    final Thread shutdownHook = new Thread(() -> {
-                        defaultOutput.close();
-                        report.close();
-                    });
+            DefaultOutput defaultOutput;
+            if (configSource.source("relp.tls.mode", "none").equals("keyVault")) {
+                context.getLogger().info("connection tls enabled");
 
-                    Runtime.getRuntime().addShutdownHook(shutdownHook);
-
-                    initialized = true;
-                    context.getLogger().info("initialized at " + this);
-                }
+                defaultOutput = new DefaultOutput(
+                        context.getLogger(),
+                        "defaultOutput",
+                        new RelpConnectionConfig(configSource),
+                        metricRegistry,
+                        new AzureSSLContextSupplier()
+                );
             }
-            finally {
-                initLock.unlock();
+            else {
+                context.getLogger().info("connection tls disabled");
+                defaultOutput = new DefaultOutput(
+                        context.getLogger(),
+                        "defaultOutput",
+                        new RelpConnectionConfig(configSource),
+                        metricRegistry
+                );
             }
+
+            context.getLogger().info("initialized at " + this);
 
             EventDataConsumer consumer = new EventDataConsumer(configSource, defaultOutput, hostname, metricRegistry);
 
@@ -193,6 +176,9 @@ public class SyslogBridge {
                     context.getLogger().warning("eventHubTriggerToSyslog event data is null");
                 }
             }
+
+            // close connections to prevent resource leak
+            defaultOutput.close();
         }
         catch (Throwable t) {
             context.getLogger().severe("exiting because caught Throwable: " + t);
