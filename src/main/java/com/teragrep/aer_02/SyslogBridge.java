@@ -60,6 +60,8 @@ import com.teragrep.aer_02.tls.AzureSSLContextSupplier;
 import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.dropwizard.DropwizardExports;
 import io.prometheus.client.exporter.common.TextFormat;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.time.ZonedDateTime;
@@ -71,10 +73,16 @@ import java.util.concurrent.locks.ReentrantLock;
 
 public class SyslogBridge {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(SyslogBridge.class);
+
     private final Lock initLock = new ReentrantLock();
     private final MetricRegistry metricRegistry = new MetricRegistry();;
     private DefaultOutput defaultOutput = null;
     private boolean initialized = false;
+
+    public SyslogBridge() {
+        LOGGER.info("SyslogBridge constructor done");
+    }
 
     @FunctionName("metrics")
     public HttpResponseMessage metrics(

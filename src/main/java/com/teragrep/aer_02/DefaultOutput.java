@@ -106,6 +106,8 @@ final class DefaultOutput implements Output {
         this.relpPort = relpConnectionConfig.relpPort();
 
         this.relpConnectionPool = relpConnectionPool;
+
+        LOGGER.info("DefaultOutput constructor done");
     }
 
     @Override

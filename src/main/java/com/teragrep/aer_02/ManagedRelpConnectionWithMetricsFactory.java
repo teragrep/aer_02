@@ -48,10 +48,14 @@ package com.teragrep.aer_02;
 import com.codahale.metrics.MetricRegistry;
 import com.teragrep.rlp_01.RelpConnection;
 import com.teragrep.rlp_01.client.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.function.Supplier;
 
 public class ManagedRelpConnectionWithMetricsFactory implements Supplier<IManagedRelpConnection> {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(ManagedRelpConnectionWithMetricsFactory.class);
 
     private final RelpConfig relpConfig;
     private final SocketConfig socketConfig;
@@ -97,6 +101,7 @@ public class ManagedRelpConnectionWithMetricsFactory implements Supplier<IManage
 
     @Override
     public IManagedRelpConnection get() {
+        LOGGER.info("get() called for new IManagedRelpConnection");
         IRelpConnection relpConnection;
         if (sslContextSupplier.isStub()) {
             relpConnection = new RelpConnectionWithConfig(new RelpConnection(), relpConfig);
@@ -126,7 +131,7 @@ public class ManagedRelpConnectionWithMetricsFactory implements Supplier<IManage
         if (relpConfig.maxIdleEnabled) {
             managedRelpConnection = new RenewableRelpConnection(managedRelpConnection, relpConfig.maxIdle);
         }
-
+        LOGGER.info("returning new managedRelpConnection");
         return managedRelpConnection;
     }
 }
