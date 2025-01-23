@@ -77,9 +77,9 @@ public final class InitializationOnDemandHolder {
     }
 
     static final class LazyHolder {
-        
+
         private LazyHolder() {
-            
+
         }
 
         private static final LazyInstance INSTANCE = new LazyInstance();
