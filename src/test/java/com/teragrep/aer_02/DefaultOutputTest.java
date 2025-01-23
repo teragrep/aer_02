@@ -102,17 +102,20 @@ public class DefaultOutputTest {
                 new ManagedRelpConnectionStub()
         );
 
-        try (
-                DefaultOutput output = new DefaultOutput(
-                        Logger.getAnonymousLogger(),
-                        new RelpConnectionConfig(new PropertySource()),
-                        pool
-                )
-        ) {
+        DefaultOutput output = new DefaultOutput(
+                Logger.getAnonymousLogger(),
+                new RelpConnectionConfig(new PropertySource()),
+                pool,
+                metricRegistry
+        );
 
+        try {
             for (int i = 0; i < measurementLimit + 100; i++) { // send more messages than the limit is
                 output.accept(syslogMessage.toRfc5424SyslogMessage().getBytes(StandardCharsets.UTF_8));
             }
+        }
+        finally {
+            output.close();
         }
 
         Assertions.assertEquals(measurementLimit, sendReservoir.size()); // should have measurementLimit amount of records saved
@@ -145,14 +148,18 @@ public class DefaultOutputTest {
                 new ManagedRelpConnectionStub()
         );
 
-        try (
-                DefaultOutput output = new DefaultOutput(
-                        Logger.getAnonymousLogger(),
-                        new RelpConnectionConfig(new PropertySource()),
-                        pool
-                )
-        ) {
+        DefaultOutput output = new DefaultOutput(
+                Logger.getAnonymousLogger(),
+                new RelpConnectionConfig(new PropertySource()),
+                pool,
+                metricRegistry
+        );
+
+        try {
             output.accept(syslogMessage.toRfc5424SyslogMessage().getBytes(StandardCharsets.UTF_8));
+        }
+        finally {
+            output.close();
         }
 
         Assertions.assertEquals(1, sendReservoir.size()); // only sent 1 message
@@ -182,18 +189,24 @@ public class DefaultOutputTest {
                 new ManagedRelpConnectionStub()
         );
 
-        try (
-                DefaultOutput output = new DefaultOutput(
-                        Logger.getAnonymousLogger(),
-                        new RelpConnectionConfig(new PropertySource()),
-                        pool
-                )
-        ) {
+        DefaultOutput output = new DefaultOutput(
+                Logger.getAnonymousLogger(),
+                new RelpConnectionConfig(new PropertySource()),
+                pool,
+                metricRegistry
+        );
+
+        try {
             output.accept(syslogMessage.toRfc5424SyslogMessage().getBytes(StandardCharsets.UTF_8));
         }
+        finally {
+            output.close();
+        }
 
-        Timer sendTimer = metricRegistry.timer(name(DefaultOutput.class, "<[defaultOutput]>", "sendLatency"));
-        Timer connectionTimer = metricRegistry.timer(name(DefaultOutput.class, "<[defaultOutput]>", "connectLatency"));
+        Timer sendTimer = output.metricRegistry().timer(name(DefaultOutput.class, "<[defaultOutput]>", "sendLatency"));
+        Timer connectionTimer = output
+                .metricRegistry()
+                .timer(name(DefaultOutput.class, "<[defaultOutput]>", "connectLatency"));
 
         Assertions.assertEquals(1, sendTimer.getCount()); // only sent 1 message
         Assertions.assertEquals(1, connectionTimer.getCount()); // only 1 connection attempt without throwing recorded

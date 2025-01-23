@@ -47,7 +47,9 @@ package com.teragrep.aer_02;
 
 import com.codahale.metrics.*;
 import com.teragrep.aer_02.config.RelpConnectionConfig;
-import com.teragrep.rlp_01.RelpBatch;
+import com.teragrep.aer_02.config.source.DefaultOutputConfig;
+import com.teragrep.aer_02.config.source.EnvironmentSource;
+import com.teragrep.aer_02.tls.AzureSSLContextSupplier;
 import com.teragrep.rlp_01.client.*;
 import com.teragrep.rlp_01.pool.Pool;
 import com.teragrep.rlp_01.pool.UnboundPool;
@@ -56,12 +58,53 @@ import java.util.logging.Logger;
 /**
  * Implementation of an shareable output. Required to be thread-safe.
  */
-final class DefaultOutput implements Output {
+public final class DefaultOutput implements Output {
 
-    private final Pool<IManagedRelpConnection> relpConnectionPool;
-    private final String relpAddress;
-    private final int relpPort;
-    private final Logger logger;
+    private DefaultOutput(DefaultOutputConfig cfg) {
+        RelpConnectionConfig relpConnectionConfig = cfg.relpConnectionConfig();
+        this.metricRegistry = new MetricRegistry();
+        this.relpAddress = relpConnectionConfig.relpAddress();
+        this.relpPort = relpConnectionConfig.relpPort();
+
+        if (cfg.tlsMode()) {
+            this.relpConnectionPool = new UnboundPool<>(
+                    new ManagedRelpConnectionWithMetricsFactory(
+                            Logger.getAnonymousLogger(),
+                            relpConnectionConfig.asRelpConfig(),
+                            "defaultOutput",
+                            metricRegistry,
+                            relpConnectionConfig.asSocketConfig(),
+                            new AzureSSLContextSupplier()
+                    ),
+                    new ManagedRelpConnectionStub()
+            );
+        }
+        else {
+            this.relpConnectionPool = new UnboundPool<>(
+                    new ManagedRelpConnectionWithMetricsFactory(
+                            Logger.getAnonymousLogger(),
+                            relpConnectionConfig.asRelpConfig(),
+                            "defaultOutput",
+                            metricRegistry,
+                            relpConnectionConfig.asSocketConfig()
+                    ),
+                    new ManagedRelpConnectionStub()
+            );
+        }
+
+        Runtime.getRuntime().addShutdownHook(new Thread(this::close));
+    }
+
+    private static class DefaultOutputHolder {
+
+        private static final DefaultOutput INSTANCE = new DefaultOutput(
+                new DefaultOutputConfig(new EnvironmentSource())
+        );
+    }
+
+    public static DefaultOutput getInstance() {
+        return DefaultOutputHolder.INSTANCE;
+    }
 
     DefaultOutput(
             Logger logger,
@@ -83,49 +126,32 @@ final class DefaultOutput implements Output {
                                 sslContextSupplier
                         ),
                         new ManagedRelpConnectionStub()
-                )
+                ),
+                metricRegistry
         );
     }
 
     DefaultOutput(
             Logger logger,
-            String name,
             RelpConnectionConfig relpConnectionConfig,
+            Pool<IManagedRelpConnection> relpConnectionPool,
             MetricRegistry metricRegistry
-    ) {
-        this(
-                logger,
-                relpConnectionConfig,
-                new UnboundPool<>(
-                        new ManagedRelpConnectionWithMetricsFactory(
-                                logger,
-                                relpConnectionConfig.asRelpConfig(),
-                                name,
-                                metricRegistry,
-                                relpConnectionConfig.asSocketConfig()
-                        ),
-                        new ManagedRelpConnectionStub()
-                )
-        );
-    }
-
-    DefaultOutput(
-            Logger logger,
-            RelpConnectionConfig relpConnectionConfig,
-            Pool<IManagedRelpConnection> relpConnectionPool
     ) {
         this.relpAddress = relpConnectionConfig.relpAddress();
         this.relpPort = relpConnectionConfig.relpPort();
 
         this.relpConnectionPool = relpConnectionPool;
-        this.logger = logger;
+        this.metricRegistry = metricRegistry;
         logger.info("DefaultOutput constructor done");
     }
 
+    private final Pool<IManagedRelpConnection> relpConnectionPool;
+    private final String relpAddress;
+    private final int relpPort;
+    private final MetricRegistry metricRegistry;
+
     @Override
     public void accept(byte[] syslogMessage) {
-        RelpBatch batch = new RelpBatch();
-        batch.insert(syslogMessage);
         IManagedRelpConnection connection = relpConnectionPool.get();
         connection.ensureSent(syslogMessage);
         relpConnectionPool.offer(connection);
@@ -139,5 +165,9 @@ final class DefaultOutput implements Output {
     @Override
     public void close() {
         relpConnectionPool.close();
+    }
+
+    public MetricRegistry metricRegistry() {
+        return metricRegistry;
     }
 }

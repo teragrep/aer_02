@@ -172,11 +172,9 @@ public class EventDataConsumerTlsTest {
             }
         };
 
-        MetricRegistry metricRegistry = new MetricRegistry();
-
         Sourceable configSource = new EnvironmentSource();
-
-        DefaultOutput defaultOutput = new DefaultOutput(
+        MetricRegistry metricRegistry = new MetricRegistry();
+        DefaultOutput output = new DefaultOutput(
                 Logger.getAnonymousLogger(),
                 "defaultOutput",
                 new RelpConnectionConfig(configSource),
@@ -184,7 +182,7 @@ public class EventDataConsumerTlsTest {
                 sslContextSupplier
         );
 
-        final EventDataConsumer edc = new EventDataConsumer(configSource, defaultOutput, "localhost", metricRegistry);
+        final EventDataConsumer edc = new EventDataConsumer(configSource, output, "localhost", metricRegistry);
 
         // Fake data
         PartitionContextFake pcf = new PartitionContextFake("eventhub.123", "test1", "$Default", "0");

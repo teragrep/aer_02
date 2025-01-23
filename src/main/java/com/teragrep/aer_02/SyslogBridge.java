@@ -45,10 +45,8 @@
  */
 package com.teragrep.aer_02;
 
-import com.codahale.metrics.MetricRegistry;
 import com.microsoft.azure.functions.*;
 import com.microsoft.azure.functions.annotation.*;
-import com.teragrep.aer_02.config.RelpConnectionConfig;
 import com.teragrep.aer_02.config.source.EnvironmentSource;
 import com.teragrep.aer_02.config.source.Sourceable;
 import com.teragrep.aer_02.json.JsonRecords;
@@ -56,7 +54,6 @@ import com.teragrep.aer_02.metrics.JmxReport;
 import com.teragrep.aer_02.metrics.PrometheusReport;
 import com.teragrep.aer_02.metrics.Report;
 import com.teragrep.aer_02.metrics.Slf4jReport;
-import com.teragrep.aer_02.tls.AzureSSLContextSupplier;
 import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.dropwizard.DropwizardExports;
 import io.prometheus.client.exporter.common.TextFormat;
@@ -125,41 +122,23 @@ public class SyslogBridge {
             final Sourceable configSource = new EnvironmentSource();
             final String hostname = new Hostname("localhost").hostname();
 
-            final MetricRegistry metricRegistry = new MetricRegistry();
-
             context.getLogger().info("initializing at " + this);
 
+            DefaultOutput defaultOutput = DefaultOutput.getInstance();
+
             final Report report = new JmxReport(
-                    new Slf4jReport(new PrometheusReport(new DropwizardExports(metricRegistry)), metricRegistry),
-                    metricRegistry
+                    new Slf4jReport(new PrometheusReport(new DropwizardExports(defaultOutput.metricRegistry())), defaultOutput.metricRegistry()), defaultOutput.metricRegistry()
             );
             report.start();
 
-            DefaultOutput defaultOutput;
-            if (configSource.source("relp.tls.mode", "none").equals("keyVault")) {
-                context.getLogger().info("connection tls enabled");
-
-                defaultOutput = new DefaultOutput(
-                        context.getLogger(),
-                        "defaultOutput",
-                        new RelpConnectionConfig(configSource),
-                        metricRegistry,
-                        new AzureSSLContextSupplier()
-                );
-            }
-            else {
-                context.getLogger().info("connection tls disabled");
-                defaultOutput = new DefaultOutput(
-                        context.getLogger(),
-                        "defaultOutput",
-                        new RelpConnectionConfig(configSource),
-                        metricRegistry
-                );
-            }
-
             context.getLogger().info("initialized at " + this);
 
-            EventDataConsumer consumer = new EventDataConsumer(configSource, defaultOutput, hostname, metricRegistry);
+            EventDataConsumer consumer = new EventDataConsumer(
+                    configSource,
+                    defaultOutput,
+                    hostname,
+                    defaultOutput.metricRegistry()
+            );
 
             for (int index = 0; index < events.length; index++) {
                 if (events[index] != null) {
@@ -175,9 +154,6 @@ public class SyslogBridge {
                     context.getLogger().warning("eventHubTriggerToSyslog event data is null");
                 }
             }
-
-            // close connections to prevent resource leak
-            defaultOutput.close();
         }
         catch (Throwable t) {
             context.getLogger().severe("exiting because caught Throwable: " + t);
