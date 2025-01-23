@@ -52,11 +52,13 @@ import com.teragrep.rlp_01.client.IRelpConnection;
 
 import java.io.IOException;
 import java.util.concurrent.TimeoutException;
+import java.util.logging.Logger;
 
 import static com.codahale.metrics.MetricRegistry.name;
 
 public class ManagedRelpConnectionWithMetrics implements IManagedRelpConnection {
 
+    private final Logger logger;
     private final IRelpConnection relpConnection;
     private boolean hasConnected;
 
@@ -70,11 +72,13 @@ public class ManagedRelpConnectionWithMetrics implements IManagedRelpConnection 
     private final Timer connectLatency;
 
     public ManagedRelpConnectionWithMetrics(
+            Logger logger,
             IRelpConnection relpConnection,
             String name,
             MetricRegistry metricRegistry
     ) {
         this(
+                logger,
                 relpConnection,
                 name,
                 metricRegistry,
@@ -84,12 +88,14 @@ public class ManagedRelpConnectionWithMetrics implements IManagedRelpConnection 
     }
 
     public ManagedRelpConnectionWithMetrics(
+            Logger logger,
             IRelpConnection relpConnection,
             String name,
             MetricRegistry metricRegistry,
             Reservoir sendReservoir,
             Reservoir connectReservoir
     ) {
+        this.logger = logger;
         this.relpConnection = relpConnection;
 
         this.records = metricRegistry.counter(name(DefaultOutput.class, "<[" + name + "]>", "records"));
@@ -131,8 +137,8 @@ public class ManagedRelpConnectionWithMetrics implements IManagedRelpConnection 
                 connects.inc();
             }
             catch (IOException | TimeoutException e) {
-                System.err
-                        .println(
+                logger
+                        .warning(
                                 "Failed to connect to relp server <[" + relpConnection.relpConfig().relpTarget + "]>:<["
                                         + relpConnection.relpConfig().relpPort + "]>: <" + e.getMessage() + ">"
                         );
@@ -142,7 +148,7 @@ public class ManagedRelpConnectionWithMetrics implements IManagedRelpConnection 
                     retriedConnects.inc();
                 }
                 catch (InterruptedException exception) {
-                    System.err.println("Reconnection timer interrupted, reconnecting now");
+                    logger.warning("Reconnection timer interrupted, reconnecting now");
                 }
             }
         }
@@ -177,7 +183,7 @@ public class ManagedRelpConnectionWithMetrics implements IManagedRelpConnection 
                     bytesCnt.inc(bytes.length);
                 }
                 catch (IllegalStateException | IOException | TimeoutException e) {
-                    System.err.println("Exception <" + e.getMessage() + "> while sending relpBatch. Will retry");
+                    logger.warning("Exception <" + e.getMessage() + "> while sending relpBatch. Will retry");
                 }
                 if (!relpBatch.verifyTransactionAll()) {
                     relpBatch.retryAllFailed();
@@ -203,7 +209,7 @@ public class ManagedRelpConnectionWithMetrics implements IManagedRelpConnection 
             this.relpConnection.disconnect();
         }
         catch (IllegalStateException | IOException | TimeoutException e) {
-            System.err.println("Forcefully closing connection due to exception <" + e.getMessage() + ">");
+            logger.warning("Forcefully closing connection due to exception <" + e.getMessage() + ">");
         }
         finally {
             tearDown();

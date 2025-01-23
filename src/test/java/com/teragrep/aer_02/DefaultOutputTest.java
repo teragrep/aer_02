@@ -65,6 +65,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 
 import java.nio.charset.StandardCharsets;
+import java.util.logging.Logger;
 
 import static com.codahale.metrics.MetricRegistry.name;
 
@@ -88,6 +89,7 @@ public class DefaultOutputTest {
 
         UnboundPool<IManagedRelpConnection> pool = new UnboundPool<>(
                 () -> new ManagedRelpConnectionWithMetrics(
+                        Logger.getAnonymousLogger(),
                         new RelpConnectionWithConfig(
                                 new RelpConnectionFake(),
                                 new RelpConnectionConfig(new PropertySource()).asRelpConfig()
@@ -100,7 +102,13 @@ public class DefaultOutputTest {
                 new ManagedRelpConnectionStub()
         );
 
-        try (DefaultOutput output = new DefaultOutput(new RelpConnectionConfig(new PropertySource()), pool)) {
+        try (
+                DefaultOutput output = new DefaultOutput(
+                        Logger.getAnonymousLogger(),
+                        new RelpConnectionConfig(new PropertySource()),
+                        pool
+                )
+        ) {
 
             for (int i = 0; i < measurementLimit + 100; i++) { // send more messages than the limit is
                 output.accept(syslogMessage.toRfc5424SyslogMessage().getBytes(StandardCharsets.UTF_8));
@@ -131,12 +139,19 @@ public class DefaultOutputTest {
 
         UnboundPool<IManagedRelpConnection> pool = new UnboundPool<>(
                 () -> new ManagedRelpConnectionWithMetrics(
+                        Logger.getAnonymousLogger(),
                         new RelpConnectionWithConfig(new ConnectionlessRelpConnectionFake(reconnections), new RelpConnectionConfig(new PropertySource()).asRelpConfig()), "defaultOutput", metricRegistry, sendReservoir, connectReservoir
                 ),
                 new ManagedRelpConnectionStub()
         );
 
-        try (DefaultOutput output = new DefaultOutput(new RelpConnectionConfig(new PropertySource()), pool)) {
+        try (
+                DefaultOutput output = new DefaultOutput(
+                        Logger.getAnonymousLogger(),
+                        new RelpConnectionConfig(new PropertySource()),
+                        pool
+                )
+        ) {
             output.accept(syslogMessage.toRfc5424SyslogMessage().getBytes(StandardCharsets.UTF_8));
         }
 
@@ -161,12 +176,19 @@ public class DefaultOutputTest {
         MetricRegistry metricRegistry = new MetricRegistry();
         UnboundPool<IManagedRelpConnection> pool = new UnboundPool<>(
                 () -> new ManagedRelpConnectionWithMetrics(
+                        Logger.getAnonymousLogger(),
                         new RelpConnectionWithConfig(new ThrowingRelpConnectionFake(reconnections), new RelpConnectionConfig(new PropertySource()).asRelpConfig()), "defaultOutput", metricRegistry
                 ),
                 new ManagedRelpConnectionStub()
         );
 
-        try (DefaultOutput output = new DefaultOutput(new RelpConnectionConfig(new PropertySource()), pool)) {
+        try (
+                DefaultOutput output = new DefaultOutput(
+                        Logger.getAnonymousLogger(),
+                        new RelpConnectionConfig(new PropertySource()),
+                        pool
+                )
+        ) {
             output.accept(syslogMessage.toRfc5424SyslogMessage().getBytes(StandardCharsets.UTF_8));
         }
 

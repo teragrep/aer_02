@@ -60,8 +60,6 @@ import com.teragrep.aer_02.tls.AzureSSLContextSupplier;
 import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.dropwizard.DropwizardExports;
 import io.prometheus.client.exporter.common.TextFormat;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.time.ZonedDateTime;
@@ -73,15 +71,13 @@ import java.util.concurrent.locks.ReentrantLock;
 
 public class SyslogBridge {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(SyslogBridge.class);
-
     private final Lock initLock = new ReentrantLock();
     private final MetricRegistry metricRegistry = new MetricRegistry();;
     private DefaultOutput defaultOutput = null;
     private boolean initialized = false;
 
     public SyslogBridge() {
-        LOGGER.info("SyslogBridge constructor done");
+
     }
 
     @FunctionName("metrics")
@@ -139,6 +135,7 @@ public class SyslogBridge {
             try {
                 initLock.lock();
                 if (!initialized) {
+                    context.getLogger().info("initializing at " + this);
                     final Report report = new JmxReport(
                             new Slf4jReport(new PrometheusReport(new DropwizardExports(metricRegistry)), metricRegistry), metricRegistry
                     );
@@ -147,6 +144,7 @@ public class SyslogBridge {
                     if (configSource.source("relp.tls.mode", "none").equals("keyVault")) {
 
                         defaultOutput = new DefaultOutput(
+                                context.getLogger(),
                                 "defaultOutput",
                                 new RelpConnectionConfig(configSource),
                                 metricRegistry,
@@ -155,6 +153,7 @@ public class SyslogBridge {
                     }
                     else {
                         defaultOutput = new DefaultOutput(
+                                context.getLogger(),
                                 "defaultOutput",
                                 new RelpConnectionConfig(configSource),
                                 metricRegistry
@@ -169,6 +168,7 @@ public class SyslogBridge {
                     Runtime.getRuntime().addShutdownHook(shutdownHook);
 
                     initialized = true;
+                    context.getLogger().info("initialized at " + this);
                 }
             }
             finally {

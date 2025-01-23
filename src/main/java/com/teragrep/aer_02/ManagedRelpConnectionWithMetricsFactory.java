@@ -48,50 +48,57 @@ package com.teragrep.aer_02;
 import com.codahale.metrics.MetricRegistry;
 import com.teragrep.rlp_01.RelpConnection;
 import com.teragrep.rlp_01.client.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.util.logging.Logger;
 
 import java.util.function.Supplier;
 
 public class ManagedRelpConnectionWithMetricsFactory implements Supplier<IManagedRelpConnection> {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(ManagedRelpConnectionWithMetricsFactory.class);
 
     private final RelpConfig relpConfig;
     private final SocketConfig socketConfig;
     private final SSLContextSupplier sslContextSupplier;
     private final String name;
     private final MetricRegistry metricRegistry;
+    private final Logger logger;
 
-    public ManagedRelpConnectionWithMetricsFactory(String name, MetricRegistry metricRegistry, RelpConfig relpConfig) {
-        this(relpConfig, name, metricRegistry, new SocketConfigDefault());
+    public ManagedRelpConnectionWithMetricsFactory(
+            Logger logger,
+            String name,
+            MetricRegistry metricRegistry,
+            RelpConfig relpConfig
+    ) {
+        this(logger, relpConfig, name, metricRegistry, new SocketConfigDefault());
     }
 
     public ManagedRelpConnectionWithMetricsFactory(
+            Logger logger,
             RelpConfig relpConfig,
             String name,
             MetricRegistry metricRegistry,
             SocketConfig socketConfig
     ) {
-        this(relpConfig, name, metricRegistry, socketConfig, new SSLContextSupplierStub());
+        this(logger, relpConfig, name, metricRegistry, socketConfig, new SSLContextSupplierStub());
     }
 
     public ManagedRelpConnectionWithMetricsFactory(
+            Logger logger,
             RelpConfig relpConfig,
             String name,
             MetricRegistry metricRegistry,
             SSLContextSupplier sslContextSupplier
     ) {
-        this(relpConfig, name, metricRegistry, new SocketConfigDefault(), sslContextSupplier);
+        this(logger, relpConfig, name, metricRegistry, new SocketConfigDefault(), sslContextSupplier);
     }
 
     public ManagedRelpConnectionWithMetricsFactory(
+            Logger logger,
             RelpConfig relpConfig,
             String name,
             MetricRegistry metricRegistry,
             SocketConfig socketConfig,
             SSLContextSupplier sslContextSupplier
     ) {
+        this.logger = logger;
         this.relpConfig = relpConfig;
         this.name = name;
         this.metricRegistry = metricRegistry;
@@ -101,7 +108,7 @@ public class ManagedRelpConnectionWithMetricsFactory implements Supplier<IManage
 
     @Override
     public IManagedRelpConnection get() {
-        LOGGER.info("get() called for new IManagedRelpConnection");
+        logger.info("get() called for new IManagedRelpConnection");
         IRelpConnection relpConnection;
         if (sslContextSupplier.isStub()) {
             relpConnection = new RelpConnectionWithConfig(new RelpConnection(), relpConfig);
@@ -119,6 +126,7 @@ public class ManagedRelpConnectionWithMetricsFactory implements Supplier<IManage
         relpConnection.setKeepAlive(socketConfig.keepAlive());
 
         IManagedRelpConnection managedRelpConnection = new ManagedRelpConnectionWithMetrics(
+                logger,
                 relpConnection,
                 name,
                 metricRegistry
@@ -131,7 +139,7 @@ public class ManagedRelpConnectionWithMetricsFactory implements Supplier<IManage
         if (relpConfig.maxIdleEnabled) {
             managedRelpConnection = new RenewableRelpConnection(managedRelpConnection, relpConfig.maxIdle);
         }
-        LOGGER.info("returning new managedRelpConnection");
+        logger.info("returning new managedRelpConnection");
         return managedRelpConnection;
     }
 }
