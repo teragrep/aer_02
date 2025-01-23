@@ -102,12 +102,7 @@ public class DefaultOutputTest {
                 new ManagedRelpConnectionStub()
         );
 
-        DefaultOutput output = new DefaultOutput(
-                Logger.getAnonymousLogger(),
-                new RelpConnectionConfig(new PropertySource()),
-                pool,
-                metricRegistry
-        );
+        DefaultOutput output = new DefaultOutput(Logger.getAnonymousLogger(), pool);
 
         try {
             for (int i = 0; i < measurementLimit + 100; i++) { // send more messages than the limit is
@@ -148,12 +143,7 @@ public class DefaultOutputTest {
                 new ManagedRelpConnectionStub()
         );
 
-        DefaultOutput output = new DefaultOutput(
-                Logger.getAnonymousLogger(),
-                new RelpConnectionConfig(new PropertySource()),
-                pool,
-                metricRegistry
-        );
+        DefaultOutput output = new DefaultOutput(Logger.getAnonymousLogger(), pool);
 
         try {
             output.accept(syslogMessage.toRfc5424SyslogMessage().getBytes(StandardCharsets.UTF_8));
@@ -189,12 +179,7 @@ public class DefaultOutputTest {
                 new ManagedRelpConnectionStub()
         );
 
-        DefaultOutput output = new DefaultOutput(
-                Logger.getAnonymousLogger(),
-                new RelpConnectionConfig(new PropertySource()),
-                pool,
-                metricRegistry
-        );
+        DefaultOutput output = new DefaultOutput(Logger.getAnonymousLogger(), pool);
 
         try {
             output.accept(syslogMessage.toRfc5424SyslogMessage().getBytes(StandardCharsets.UTF_8));
@@ -203,10 +188,8 @@ public class DefaultOutputTest {
             output.close();
         }
 
-        Timer sendTimer = output.metricRegistry().timer(name(DefaultOutput.class, "<[defaultOutput]>", "sendLatency"));
-        Timer connectionTimer = output
-                .metricRegistry()
-                .timer(name(DefaultOutput.class, "<[defaultOutput]>", "connectLatency"));
+        Timer sendTimer = metricRegistry.timer(name(DefaultOutput.class, "<[defaultOutput]>", "sendLatency"));
+        Timer connectionTimer = metricRegistry.timer(name(DefaultOutput.class, "<[defaultOutput]>", "connectLatency"));
 
         Assertions.assertEquals(1, sendTimer.getCount()); // only sent 1 message
         Assertions.assertEquals(1, connectionTimer.getCount()); // only 1 connection attempt without throwing recorded

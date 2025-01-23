@@ -50,12 +50,7 @@ import com.microsoft.azure.functions.annotation.*;
 import com.teragrep.aer_02.config.source.EnvironmentSource;
 import com.teragrep.aer_02.config.source.Sourceable;
 import com.teragrep.aer_02.json.JsonRecords;
-import com.teragrep.aer_02.metrics.JmxReport;
-import com.teragrep.aer_02.metrics.PrometheusReport;
-import com.teragrep.aer_02.metrics.Report;
-import com.teragrep.aer_02.metrics.Slf4jReport;
 import io.prometheus.client.CollectorRegistry;
-import io.prometheus.client.dropwizard.DropwizardExports;
 import io.prometheus.client.exporter.common.TextFormat;
 
 import java.io.*;
@@ -124,20 +119,15 @@ public class SyslogBridge {
 
             context.getLogger().info("initializing at " + this);
 
-            DefaultOutput defaultOutput = DefaultOutput.getInstance();
-
-            final Report report = new JmxReport(
-                    new Slf4jReport(new PrometheusReport(new DropwizardExports(defaultOutput.metricRegistry())), defaultOutput.metricRegistry()), defaultOutput.metricRegistry()
-            );
-            report.start();
-
+            final InitializationOnDemandHolder.LazyInstance lazyInstance = InitializationOnDemandHolder.lazyInstance();
+            final DefaultOutput defaultOutput = lazyInstance.defaultOutput();
             context.getLogger().info("initialized at " + this);
 
-            EventDataConsumer consumer = new EventDataConsumer(
+            final EventDataConsumer consumer = new EventDataConsumer(
                     configSource,
                     defaultOutput,
                     hostname,
-                    defaultOutput.metricRegistry()
+                    lazyInstance.metricRegistry()
             );
 
             for (int index = 0; index < events.length; index++) {
