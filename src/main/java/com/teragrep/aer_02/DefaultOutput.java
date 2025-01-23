@@ -56,7 +56,8 @@ import com.teragrep.rlp_01.pool.UnboundPool;
 import java.util.logging.Logger;
 
 /**
- * Implementation of an shareable output. Required to be thread-safe.
+ * Implementation of a shareable output. Required to be thread-safe. Uses Initialization on demand holder idiom. See
+ * <a href="https://en.wikipedia.org/wiki/Initialization-on-demand_holder_idiom">Wikipedia article</a> for more details.
  */
 public final class DefaultOutput implements Output {
 
