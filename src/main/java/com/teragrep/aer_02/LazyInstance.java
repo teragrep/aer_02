@@ -66,88 +66,79 @@ import java.util.logging.Logger;
  * Uses Initialization on demand holder idiom. See
  * <a href="https://en.wikipedia.org/wiki/Initialization-on-demand_holder_idiom">Wikipedia article</a> for more details.
  */
-public final class InitializationOnDemandHolder {
+public final class LazyInstance {
 
-    private InitializationOnDemandHolder() {
+    private final DefaultOutput defaultOutput;
+    private final MetricRegistry metricRegistry;
+    private final Report report;
 
+    private LazyInstance() {
+        final Logger logger = Logger.getAnonymousLogger();
+        metricRegistry = new MetricRegistry();
+        Sourceable environmentSource = new EnvironmentSource();
+        RelpConnectionConfig relpConnectionConfig = new RelpConnectionConfig(environmentSource);
+        report = new JmxReport(
+                new Slf4jReport(new PrometheusReport(new DropwizardExports(metricRegistry)), metricRegistry),
+                metricRegistry
+        );
+
+        report.start();
+
+        Pool<IManagedRelpConnection> relpConnectionPool;
+        if (environmentSource.source("relp.tls.mode", "none").equals("keyVault")) {
+            logger.info("Using keyVault TLS mode");
+            relpConnectionPool = new UnboundPool<>(
+                    new ManagedRelpConnectionWithMetricsFactory(
+                            logger,
+                            relpConnectionConfig.asRelpConfig(),
+                            "defaultOutput",
+                            metricRegistry,
+                            relpConnectionConfig.asSocketConfig(),
+                            new AzureSSLContextSupplier()
+                    ),
+                    new ManagedRelpConnectionStub()
+            );
+        }
+        else {
+            logger.info("Using plain mode");
+            relpConnectionPool = new UnboundPool<>(
+                    new ManagedRelpConnectionWithMetricsFactory(
+                            logger,
+                            relpConnectionConfig.asRelpConfig(),
+                            "defaultOutput",
+                            metricRegistry,
+                            relpConnectionConfig.asSocketConfig()
+                    ),
+                    new ManagedRelpConnectionStub()
+            );
+        }
+
+        defaultOutput = new DefaultOutput(logger, relpConnectionPool);
+
+        Runtime.getRuntime().addShutdownHook(new Thread(this::close));
     }
 
-    static LazyHolder.LazyInstance lazyInstance() {
+    static LazyInstance lazySingletonInstance() {
+        // a way to access the singleton
         return LazyHolder.INSTANCE;
     }
 
     static final class LazyHolder {
 
-        private LazyHolder() {
+        // this holds the instance, and prevents initialization before access
+        static final LazyInstance INSTANCE = new LazyInstance();
+    }
 
-        }
+    public DefaultOutput defaultOutput() {
+        return defaultOutput;
+    }
 
-        private static final LazyInstance INSTANCE = new LazyInstance();
+    public MetricRegistry metricRegistry() {
+        return metricRegistry;
+    }
 
-        static final class LazyInstance {
-
-            private final DefaultOutput defaultOutput;
-            private final MetricRegistry metricRegistry;
-            private final Report report;
-
-            private LazyInstance() {
-                final Logger logger = Logger.getAnonymousLogger();
-                metricRegistry = new MetricRegistry();
-                Sourceable environmentSource = new EnvironmentSource();
-                RelpConnectionConfig relpConnectionConfig = new RelpConnectionConfig(environmentSource);
-                report = new JmxReport(
-                        new Slf4jReport(new PrometheusReport(new DropwizardExports(metricRegistry)), metricRegistry),
-                        metricRegistry
-                );
-
-                report.start();
-
-                Pool<IManagedRelpConnection> relpConnectionPool;
-                if (environmentSource.source("relp.tls.mode", "none").equals("keyVault")) {
-                    logger.info("Using keyVault TLS mode");
-                    relpConnectionPool = new UnboundPool<>(
-                            new ManagedRelpConnectionWithMetricsFactory(
-                                    logger,
-                                    relpConnectionConfig.asRelpConfig(),
-                                    "defaultOutput",
-                                    metricRegistry,
-                                    relpConnectionConfig.asSocketConfig(),
-                                    new AzureSSLContextSupplier()
-                            ),
-                            new ManagedRelpConnectionStub()
-                    );
-                }
-                else {
-                    logger.info("Using plain mode");
-                    relpConnectionPool = new UnboundPool<>(
-                            new ManagedRelpConnectionWithMetricsFactory(
-                                    logger,
-                                    relpConnectionConfig.asRelpConfig(),
-                                    "defaultOutput",
-                                    metricRegistry,
-                                    relpConnectionConfig.asSocketConfig()
-                            ),
-                            new ManagedRelpConnectionStub()
-                    );
-                }
-
-                defaultOutput = new DefaultOutput(logger, relpConnectionPool);
-
-                Runtime.getRuntime().addShutdownHook(new Thread(this::close));
-            }
-
-            public DefaultOutput defaultOutput() {
-                return defaultOutput;
-            }
-
-            public MetricRegistry metricRegistry() {
-                return metricRegistry;
-            }
-
-            private void close() {
-                report.close();
-                defaultOutput.close();
-            }
-        }
+    private void close() {
+        report.close();
+        defaultOutput.close();
     }
 }
