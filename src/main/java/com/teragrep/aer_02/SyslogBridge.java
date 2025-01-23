@@ -126,7 +126,6 @@ public class SyslogBridge {
             final String hostname = new Hostname("localhost").hostname();
 
             final MetricRegistry metricRegistry = new MetricRegistry();
-            ;
 
             context.getLogger().info("initializing at " + this);
 
