@@ -98,6 +98,7 @@ public final class InitializationOnDemandHolder {
 
             Pool<IManagedRelpConnection> relpConnectionPool;
             if (environmentSource.source("relp.tls.mode", "none").equals("keyVault")) {
+                logger.info("Using keyVault TLS mode");
                 relpConnectionPool = new UnboundPool<>(
                         new ManagedRelpConnectionWithMetricsFactory(
                                 logger,
@@ -111,6 +112,7 @@ public final class InitializationOnDemandHolder {
                 );
             }
             else {
+                logger.info("Using plain mode");
                 relpConnectionPool = new UnboundPool<>(
                         new ManagedRelpConnectionWithMetricsFactory(
                                 logger,
