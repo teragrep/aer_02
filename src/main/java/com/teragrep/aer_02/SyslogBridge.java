@@ -142,6 +142,7 @@ public class SyslogBridge {
                     report.start();
 
                     if (configSource.source("relp.tls.mode", "none").equals("keyVault")) {
+                        context.getLogger().info("connection tls enabled");
 
                         defaultOutput = new DefaultOutput(
                                 context.getLogger(),
@@ -152,6 +153,7 @@ public class SyslogBridge {
                         );
                     }
                     else {
+                        context.getLogger().info("connection tls disabled");
                         defaultOutput = new DefaultOutput(
                                 context.getLogger(),
                                 "defaultOutput",
