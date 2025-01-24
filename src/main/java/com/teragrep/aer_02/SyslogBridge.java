@@ -47,13 +47,9 @@ package com.teragrep.aer_02;
 
 import com.microsoft.azure.functions.*;
 import com.microsoft.azure.functions.annotation.*;
-import com.teragrep.aer_02.config.SyslogConfig;
-import com.teragrep.aer_02.config.source.EnvironmentSource;
-import com.teragrep.aer_02.config.source.Sourceable;
 import com.teragrep.aer_02.json.JsonRecords;
 import com.teragrep.aer_02.json.JsonResourceId;
-import com.teragrep.aer_02.plugin.PluginConfiguration;
-import com.teragrep.aer_02.plugin.ResourceIdToPluginMap;
+import com.teragrep.aer_02.plugin.LazyPluginMapInstance;
 import com.teragrep.akv_01.plugin.*;
 import com.teragrep.rlo_14.SyslogMessage;
 import io.prometheus.client.CollectorRegistry;
@@ -119,30 +115,17 @@ public class SyslogBridge {
         try {
             context.getLogger().fine("eventHubTriggerToSyslog triggered");
             context.getLogger().fine("Got events: " + events.length);
-
-            final Sourceable configSource = new EnvironmentSource();
-            final String hostname = new Hostname("localhost").hostname();
-
             context.getLogger().info("initializing at " + this);
 
             final LazyInstance lazyInstance = LazyInstance.lazySingletonInstance();
             final DefaultOutput defaultOutput = lazyInstance.defaultOutput();
+
+            final Map<String, Plugin> resourceIdToPluginMap = LazyPluginMapInstance
+                    .lazySingletonInstance()
+                    .resourceIdToPluginMap();
             context.getLogger().info("initialized at " + this);
 
             final EventDataConsumer consumer = new EventDataConsumer(defaultOutput, lazyInstance.metricRegistry());
-
-            final PluginMap pluginMap = new PluginMap(new PluginConfiguration(configSource).asJson());
-
-            final Map<String, PluginFactoryConfig> pluginFactoryConfigs = pluginMap.asUnmodifiableMap();
-            final String defaultPluginFactoryClassName = pluginMap.defaultPluginFactoryClassName();
-
-            Map<String, Plugin> resourceIdToPluginMap = new ResourceIdToPluginMap(
-                    pluginFactoryConfigs,
-                    defaultPluginFactoryClassName,
-                    hostname,
-                    new SyslogConfig(configSource),
-                    context
-            ).asUnmodifiableMap();
 
             for (int index = 0; index < events.length; index++) {
                 final String event = events[index];

@@ -45,7 +45,6 @@
  */
 package com.teragrep.aer_02.plugin;
 
-import com.microsoft.azure.functions.ExecutionContext;
 import com.teragrep.aer_02.config.SyslogConfig;
 import com.teragrep.akv_01.plugin.*;
 import jakarta.json.Json;
@@ -55,6 +54,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.logging.Logger;
 
 public final class ResourceIdToPluginMap {
 
@@ -62,20 +62,20 @@ public final class ResourceIdToPluginMap {
     private final String defaultPluginFactoryClassName;
     private final String realHostname;
     private final SyslogConfig syslogConfig;
-    private final ExecutionContext context;
+    private final Logger logger;
 
     public ResourceIdToPluginMap(
             final Map<String, PluginFactoryConfig> pluginFactoryConfigs,
             final String defaultPluginFactoryClassName,
             final String realHostname,
             final SyslogConfig syslogConfig,
-            final ExecutionContext context
+            final Logger logger
     ) {
         this.pluginFactoryConfigs = pluginFactoryConfigs;
         this.defaultPluginFactoryClassName = defaultPluginFactoryClassName;
         this.realHostname = realHostname;
         this.syslogConfig = syslogConfig;
-        this.context = context;
+        this.logger = logger;
     }
 
     public Map<String, Plugin> asUnmodifiableMap() {
@@ -106,7 +106,7 @@ public final class ResourceIdToPluginMap {
                 ClassNotFoundException | InvocationTargetException | NoSuchMethodException | InstantiationException
                 | IllegalAccessException e
         ) {
-            context.getLogger().throwing(ResourceIdToPluginMap.class.getName(), "asUnmodifiableMap", e);
+            logger.throwing(ResourceIdToPluginMap.class.getName(), "asUnmodifiableMap", e);
             throw new IllegalStateException(e);
         }
     }
@@ -119,11 +119,11 @@ public final class ResourceIdToPluginMap {
         ResourceIdToPluginMap that = (ResourceIdToPluginMap) o;
         return Objects.equals(pluginFactoryConfigs, that.pluginFactoryConfigs) && Objects
                 .equals(defaultPluginFactoryClassName, that.defaultPluginFactoryClassName)
-                && Objects.equals(realHostname, that.realHostname) && Objects.equals(syslogConfig, that.syslogConfig) && Objects.equals(context, that.context);
+                && Objects.equals(realHostname, that.realHostname) && Objects.equals(syslogConfig, that.syslogConfig);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(pluginFactoryConfigs, defaultPluginFactoryClassName, realHostname, syslogConfig, context);
+        return Objects.hash(pluginFactoryConfigs, defaultPluginFactoryClassName, realHostname, syslogConfig);
     }
 }

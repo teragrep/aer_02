@@ -45,63 +45,63 @@
  */
 package com.teragrep.aer_02.plugin;
 
+import com.teragrep.aer_02.Hostname;
 import com.teragrep.aer_02.config.SyslogConfig;
-import com.teragrep.aer_02.fakes.ThrowingPlugin;
+import com.teragrep.aer_02.config.source.EnvironmentSource;
+import com.teragrep.aer_02.config.source.Sourceable;
 import com.teragrep.akv_01.plugin.Plugin;
 import com.teragrep.akv_01.plugin.PluginFactoryConfig;
-import com.teragrep.akv_01.plugin.PluginFactoryConfigImpl;
-import nl.jqno.equalsverifier.EqualsVerifier;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
+import com.teragrep.akv_01.plugin.PluginMap;
 
-import java.util.HashMap;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.Map;
 import java.util.logging.Logger;
 
-public final class ResourceIdToPluginMapTest {
+/**
+ * Uses Initialization on demand holder idiom. See
+ * <a href="https://en.wikipedia.org/wiki/Initialization-on-demand_holder_idiom">Wikipedia article</a> for more details.
+ */
+public final class LazyPluginMapInstance {
 
-    @Test
-    void testWithOnePluginFactory() {
-        final Map<String, PluginFactoryConfig> configs = new HashMap<>();
-        configs.put("123", new PluginFactoryConfigImpl("com.teragrep.aer_02.fakes.ThrowingPluginFactory", "path"));
+    private final Map<String, Plugin> resourceIdToPluginMap;
 
-        final ResourceIdToPluginMap resourceIdToPluginMap = new ResourceIdToPluginMap(
-                configs,
-                "com.teragrep.aer_02.plugin.DefaultPluginFactory",
-                "host",
-                new SyslogConfig("app", "host"),
-                Logger.getAnonymousLogger()
-        );
+    private LazyPluginMapInstance() {
+        final Logger logger = Logger.getAnonymousLogger();
+        final Sourceable configSource = new EnvironmentSource();
+        final PluginMap pluginMap;
+        try {
+            pluginMap = new PluginMap(new PluginConfiguration(configSource).asJson());
+        }
+        catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+        final String hostname = new Hostname("localhost").hostname();
 
-        Map<String, Plugin> plugins = resourceIdToPluginMap.asUnmodifiableMap();
-        Assertions.assertEquals(2, plugins.size());
-        Assertions.assertTrue(plugins.containsKey("123"));
-        Assertions.assertEquals(ThrowingPlugin.class.getName(), plugins.get("123").getClass().getName());
-        Assertions.assertEquals(DefaultPlugin.class.getName(), plugins.get("").getClass().getName());
+        final Map<String, PluginFactoryConfig> pluginFactoryConfigs = pluginMap.asUnmodifiableMap();
+        final String defaultPluginFactoryClassName = pluginMap.defaultPluginFactoryClassName();
+
+        this.resourceIdToPluginMap = new ResourceIdToPluginMap(
+                pluginFactoryConfigs,
+                defaultPluginFactoryClassName,
+                hostname,
+                new SyslogConfig(configSource),
+                logger
+        ).asUnmodifiableMap();
     }
 
-    @Test
-    void testWithNoPluginFactories() {
-        final Map<String, PluginFactoryConfig> configs = new HashMap<>();
-        final ResourceIdToPluginMap resourceIdToPluginMap = new ResourceIdToPluginMap(
-                configs,
-                "com.teragrep.aer_02.plugin.DefaultPluginFactory",
-                "host",
-                new SyslogConfig("app", "host"),
-                Logger.getAnonymousLogger()
-        );
-
-        Map<String, Plugin> plugins = resourceIdToPluginMap.asUnmodifiableMap();
-        Assertions.assertEquals(1, plugins.size());
-        Assertions.assertEquals(DefaultPlugin.class.getName(), plugins.get("").getClass().getName());
+    public static LazyPluginMapInstance lazySingletonInstance() {
+        // a way to access the singleton
+        return LazyHolder.INSTANCE;
     }
 
-    @Test
-    void testEqualsContract() {
-        EqualsVerifier
-                .forClass(ResourceIdToPluginMap.class)
-                .withPrefabValues(Logger.class, Logger.getAnonymousLogger(), Logger.getAnonymousLogger())
-                .withIgnoredFields("logger")
-                .verify();
+    static final class LazyHolder {
+
+        // this holds the instance, and prevents initialization before access
+        static final LazyPluginMapInstance INSTANCE = new LazyPluginMapInstance();
+    }
+
+    public Map<String, Plugin> resourceIdToPluginMap() {
+        return resourceIdToPluginMap;
     }
 }
