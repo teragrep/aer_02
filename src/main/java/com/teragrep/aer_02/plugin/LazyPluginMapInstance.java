@@ -64,7 +64,8 @@ import java.util.logging.Logger;
  */
 public final class LazyPluginMapInstance {
 
-    private final Map<String, Plugin> resourceIdToPluginMap;
+    private final Map<String, Plugin> mappedPlugins;
+    private final Plugin defaultPlugin;
 
     private LazyPluginMapInstance() {
         final Logger logger = Logger.getAnonymousLogger();
@@ -81,13 +82,16 @@ public final class LazyPluginMapInstance {
         final Map<String, PluginFactoryConfig> pluginFactoryConfigs = pluginMap.asUnmodifiableMap();
         final String defaultPluginFactoryClassName = pluginMap.defaultPluginFactoryClassName();
 
-        this.resourceIdToPluginMap = new ResourceIdToPluginMap(
+        final ResourceIdToPluginMap resourceIdToPluginMap = new ResourceIdToPluginMap(
                 pluginFactoryConfigs,
                 defaultPluginFactoryClassName,
                 hostname,
                 new SyslogConfig(configSource),
                 logger
-        ).asUnmodifiableMap();
+        );
+
+        this.mappedPlugins = resourceIdToPluginMap.asUnmodifiableMap();
+        this.defaultPlugin = resourceIdToPluginMap.defaultPlugin();
     }
 
     public static LazyPluginMapInstance lazySingletonInstance() {
@@ -101,7 +105,11 @@ public final class LazyPluginMapInstance {
         static final LazyPluginMapInstance INSTANCE = new LazyPluginMapInstance();
     }
 
-    public Map<String, Plugin> resourceIdToPluginMap() {
-        return resourceIdToPluginMap;
+    public Map<String, Plugin> mappedPlugins() {
+        return mappedPlugins;
+    }
+
+    public Plugin defaultPlugin() {
+        return defaultPlugin;
     }
 }

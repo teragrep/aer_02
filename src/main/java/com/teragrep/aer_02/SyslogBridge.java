@@ -54,6 +54,7 @@ import com.teragrep.akv_01.plugin.*;
 import com.teragrep.rlo_14.SyslogMessage;
 import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.exporter.common.TextFormat;
+import jakarta.json.JsonException;
 
 import java.io.*;
 import java.time.ZonedDateTime;
@@ -120,9 +121,11 @@ public class SyslogBridge {
             final LazyInstance lazyInstance = LazyInstance.lazySingletonInstance();
             final DefaultOutput defaultOutput = lazyInstance.defaultOutput();
 
-            final Map<String, Plugin> resourceIdToPluginMap = LazyPluginMapInstance
-                    .lazySingletonInstance()
-                    .resourceIdToPluginMap();
+            final LazyPluginMapInstance lazyPluginMapInstance = LazyPluginMapInstance.lazySingletonInstance();
+
+            final Map<String, Plugin> mappedPlugins = lazyPluginMapInstance.mappedPlugins();
+            final Plugin defaultPlugin = lazyPluginMapInstance.defaultPlugin();
+
             context.getLogger().info("initialized at " + this);
 
             final EventDataConsumer consumer = new EventDataConsumer(defaultOutput, lazyInstance.metricRegistry());
@@ -133,9 +136,20 @@ public class SyslogBridge {
                     final ZonedDateTime et = ZonedDateTime.parse(enqueuedTimeUtcArray.get(index) + "Z"); // needed as the UTC time presented does not have a TZ
                     context.getLogger().fine("Accepting event: " + event);
 
-                    final String jsonResourceId = new JsonResourceId(event).resourceId();
-                    final Plugin plugin = resourceIdToPluginMap
-                            .getOrDefault(jsonResourceId, resourceIdToPluginMap.get(""));
+                    Plugin plugin;
+                    try {
+                        final String jsonResourceId = new JsonResourceId(event).resourceId();
+                        plugin = mappedPlugins.getOrDefault(jsonResourceId, defaultPlugin);
+                    }
+                    catch (JsonException e) {
+                        context
+                                .getLogger()
+                                .throwing(
+                                        SyslogBridge.class.getName(),
+                                        "Could not parse resourceId from event payload, defaulting to DefaultPlugin", e
+                                );
+                        plugin = defaultPlugin;
+                    }
 
                     final String[] records = new JsonRecords(event).records();
                     for (final String record : records) {

@@ -47,6 +47,7 @@ package com.teragrep.aer_02.json;
 
 import jakarta.json.Json;
 import jakarta.json.JsonArray;
+import jakarta.json.JsonException;
 import jakarta.json.JsonObject;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.jupiter.api.Assertions;
@@ -65,20 +66,23 @@ public final class JsonResourceIdTest {
     void testWithEmptyJsonObject() {
         JsonObject json = Json.createObjectBuilder().build();
         JsonResourceId jsonResourceId = new JsonResourceId(json.toString());
-        Assertions.assertEquals("", jsonResourceId.resourceId());
+        JsonException e = Assertions.assertThrows(JsonException.class, jsonResourceId::resourceId);
+        Assertions.assertEquals("Missing key <resourceId> in main structure", e.getMessage());
     }
 
     @Test
     void testWithEmptyJsonArray() {
         JsonArray json = Json.createArrayBuilder().build();
         JsonResourceId jsonResourceId = new JsonResourceId(json.toString());
-        Assertions.assertEquals("", jsonResourceId.resourceId());
+        JsonException e = Assertions.assertThrows(JsonException.class, jsonResourceId::resourceId);
+        Assertions.assertEquals("Missing main structure, expected JSON object", e.getMessage());
     }
 
     @Test
     void testWithInvalidJson() {
         JsonResourceId jsonResourceId = new JsonResourceId("some text that is not in json format");
-        Assertions.assertEquals("", jsonResourceId.resourceId());
+        JsonException e = Assertions.assertThrows(JsonException.class, jsonResourceId::resourceId);
+        Assertions.assertEquals("Could not parse message into JSON", e.getMessage());
     }
 
     @Test

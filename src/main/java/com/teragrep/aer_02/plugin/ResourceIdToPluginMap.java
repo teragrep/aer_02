@@ -81,19 +81,16 @@ public final class ResourceIdToPluginMap {
     public Map<String, Plugin> asUnmodifiableMap() {
         final Map<String, Plugin> rv = new HashMap<>();
         pluginFactoryConfigs.forEach((id, cfg) -> rv.put(id, newPlugin(cfg)));
-
-        // default plugin
-        rv
-                .put(
-                        "",
-                        newPlugin(
-                                new PluginFactoryConfigImpl(
-                                        defaultPluginFactoryClassName,
-                                        Json.createObjectBuilder().add("realHostname", realHostname).add("syslogHostname", syslogConfig.hostName()).add("syslogAppname", syslogConfig.appName()).build().toString()
-                                )
-                        )
-                );
         return Collections.unmodifiableMap(rv);
+    }
+
+    public Plugin defaultPlugin() {
+        return newPlugin(
+                new PluginFactoryConfigImpl(
+                        defaultPluginFactoryClassName,
+                        Json.createObjectBuilder().add("realHostname", realHostname).add("syslogHostname", syslogConfig.hostName()).add("syslogAppname", syslogConfig.appName()).build().toString()
+                )
+        );
     }
 
     private Plugin newPlugin(final PluginFactoryConfig cfg) {

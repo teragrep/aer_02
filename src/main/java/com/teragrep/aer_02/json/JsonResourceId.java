@@ -59,7 +59,7 @@ public final class JsonResourceId {
         this.message = message;
     }
 
-    public String resourceId() {
+    public String resourceId() throws JsonException {
         final String resourceIdKey = "resourceId";
         final JsonStructure mainStructure;
         try (final JsonReader reader = Json.createReader(new StringReader(message))) {
@@ -67,24 +67,24 @@ public final class JsonResourceId {
         }
         catch (JsonParsingException e) {
             // Could not parse JSON, return empty id
-            return "";
+            throw new JsonException("Could not parse message into JSON", e);
         }
 
         if (mainStructure == null || !mainStructure.getValueType().equals(JsonValue.ValueType.OBJECT)) {
             // No main structure or it wasn't a JSONObject, return empty id
-            return "";
+            throw new JsonException("Missing main structure, expected JSON object");
         }
 
         final JsonObject mainObject = mainStructure.asJsonObject();
 
         if (!mainObject.containsKey(resourceIdKey)) {
             // No "resourceId" key present in JSONObject, return empty id
-            return "";
+            throw new JsonException("Missing key <" + resourceIdKey + "> in main structure");
         }
 
         if (!mainObject.get(resourceIdKey).getValueType().equals(JsonValue.ValueType.STRING)) {
             // resourceId was not a string, return empty id
-            return "";
+            throw new JsonException("Key <" + resourceIdKey + "> was not of the expected type String");
         }
 
         return mainObject.getJsonString(resourceIdKey).getString();

@@ -74,10 +74,11 @@ public final class ResourceIdToPluginMapTest {
         );
 
         Map<String, Plugin> plugins = resourceIdToPluginMap.asUnmodifiableMap();
-        Assertions.assertEquals(2, plugins.size());
+        Assertions.assertEquals(1, plugins.size());
         Assertions.assertTrue(plugins.containsKey("123"));
         Assertions.assertEquals(ThrowingPlugin.class.getName(), plugins.get("123").getClass().getName());
-        Assertions.assertEquals(DefaultPlugin.class.getName(), plugins.get("").getClass().getName());
+        Assertions
+                .assertEquals(DefaultPlugin.class.getName(), resourceIdToPluginMap.defaultPlugin().getClass().getName());
     }
 
     @Test
@@ -92,8 +93,9 @@ public final class ResourceIdToPluginMapTest {
         );
 
         Map<String, Plugin> plugins = resourceIdToPluginMap.asUnmodifiableMap();
-        Assertions.assertEquals(1, plugins.size());
-        Assertions.assertEquals(DefaultPlugin.class.getName(), plugins.get("").getClass().getName());
+        Assertions.assertEquals(0, plugins.size());
+        Assertions
+                .assertEquals(DefaultPlugin.class.getName(), resourceIdToPluginMap.defaultPlugin().getClass().getName());
     }
 
     @Test
