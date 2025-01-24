@@ -61,6 +61,7 @@ import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.logging.Level;
 
 public class SyslogBridge {
 
@@ -114,9 +115,10 @@ public class SyslogBridge {
             ExecutionContext context
     ) {
         try {
-            context.getLogger().fine("eventHubTriggerToSyslog triggered");
-            context.getLogger().fine("Got events: " + events.length);
-            context.getLogger().info("initializing at " + this);
+            if (context.getLogger().isLoggable(Level.FINE)) {
+                context.getLogger().fine("eventHubTriggerToSyslog triggered");
+                context.getLogger().fine("Got events: " + events.length);
+            }
 
             final LazyInstance lazyInstance = LazyInstance.lazySingletonInstance();
             final DefaultOutput defaultOutput = lazyInstance.defaultOutput();
@@ -126,15 +128,15 @@ public class SyslogBridge {
             final Map<String, Plugin> mappedPlugins = lazyPluginMapInstance.mappedPlugins();
             final Plugin defaultPlugin = lazyPluginMapInstance.defaultPlugin();
 
-            context.getLogger().info("initialized at " + this);
-
             final EventDataConsumer consumer = new EventDataConsumer(defaultOutput, lazyInstance.metricRegistry());
 
             for (int index = 0; index < events.length; index++) {
                 final String event = events[index];
                 if (event != null) {
                     final ZonedDateTime et = ZonedDateTime.parse(enqueuedTimeUtcArray.get(index) + "Z"); // needed as the UTC time presented does not have a TZ
-                    context.getLogger().fine("Accepting event: " + event);
+                    if (context.getLogger().isLoggable(Level.FINE)) {
+                        context.getLogger().fine("Accepting event: " + event);
+                    }
 
                     Plugin plugin;
                     try {
@@ -164,7 +166,9 @@ public class SyslogBridge {
             }
         }
         catch (Throwable t) {
-            context.getLogger().severe("exiting because caught Throwable: " + t);
+            if (context.getLogger().isLoggable(Level.SEVERE)) {
+                context.getLogger().severe("exiting because caught Throwable: " + t);
+            }
             System.exit(1);
         }
     }
