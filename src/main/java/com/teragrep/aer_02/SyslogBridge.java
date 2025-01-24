@@ -52,7 +52,8 @@ import com.teragrep.aer_02.config.source.EnvironmentSource;
 import com.teragrep.aer_02.config.source.Sourceable;
 import com.teragrep.aer_02.json.JsonRecords;
 import com.teragrep.aer_02.json.JsonResourceId;
-import com.teragrep.aer_02.metrics.Report;
+import com.teragrep.aer_02.plugin.PluginConfiguration;
+import com.teragrep.aer_02.plugin.ResourceIdToPluginMap;
 import com.teragrep.akv_01.plugin.*;
 import com.teragrep.rlo_14.SyslogMessage;
 import io.prometheus.client.CollectorRegistry;
@@ -69,14 +70,6 @@ public class SyslogBridge {
     public SyslogBridge() {
 
     }
-    private Sourceable configSource;
-    private SyslogConfig syslogConfig;
-    private String hostname;
-    private EventDataConsumer consumer;
-    private Report report;
-    private MetricRegistry metricRegistry;
-    private Map<String, Plugin> resourceIdToPluginMap;
-    private boolean initialized = false;
 
     @FunctionName("metrics")
     public HttpResponseMessage metrics(
@@ -136,27 +129,36 @@ public class SyslogBridge {
             final DefaultOutput defaultOutput = lazyInstance.defaultOutput();
             context.getLogger().info("initialized at " + this);
 
-            final EventDataConsumer consumer = new EventDataConsumer(
-                    configSource,
-                    defaultOutput,
+            final EventDataConsumer consumer = new EventDataConsumer(defaultOutput, lazyInstance.metricRegistry());
+
+            final PluginMap pluginMap = new PluginMap(new PluginConfiguration(configSource).asJson());
+
+            final Map<String, PluginFactoryConfig> pluginFactoryConfigs = pluginMap.asUnmodifiableMap();
+            final String defaultPluginFactoryClassName = pluginMap.defaultPluginFactoryClassName();
+
+            Map<String, Plugin> resourceIdToPluginMap = new ResourceIdToPluginMap(
+                    pluginFactoryConfigs,
+                    defaultPluginFactoryClassName,
                     hostname,
-                    lazyInstance.metricRegistry()
-            );
+                    new SyslogConfig(configSource),
+                    context
+            ).asUnmodifiableMap();
 
             for (int index = 0; index < events.length; index++) {
                 final String event = events[index];
-            if (event != null) {
+                if (event != null) {
                     final ZonedDateTime et = ZonedDateTime.parse(enqueuedTimeUtcArray.get(index) + "Z"); // needed as the UTC time presented does not have a TZ
                     context.getLogger().fine("Accepting event: " + event);
 
-                final String jsonResourceId = new JsonResourceId(event).resourceId();
-                final Plugin plugin = resourceIdToPluginMap.getOrDefault(jsonResourceId, resourceIdToPluginMap.get(""));
+                    final String jsonResourceId = new JsonResourceId(event).resourceId();
+                    final Plugin plugin = resourceIdToPluginMap
+                            .getOrDefault(jsonResourceId, resourceIdToPluginMap.get(""));
 
-                final String[] records = new JsonRecords(event).records();
+                    final String[] records = new JsonRecords(event).records();
                     for (final String record : records) {
                         final SyslogMessage outputMsg = plugin
                                 .syslogMessage(record, partitionContext, et, offsetArray.get(index), propertiesArray[index], systemPropertiesArray[index]);
-                    consumer.accept(outputMsg);
+                        consumer.accept(outputMsg);
                     }
                 }
                 else {

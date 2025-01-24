@@ -47,8 +47,6 @@ package com.teragrep.aer_02;
 
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;
-import com.teragrep.aer_02.config.SyslogConfig;
-import com.teragrep.aer_02.config.source.Sourceable;
 import com.teragrep.rlo_14.SDElement;
 import com.teragrep.rlo_14.SyslogMessage;
 import com.teragrep.rlo_14.*;
@@ -64,20 +62,11 @@ final class EventDataConsumer {
 
     // Note: Checkpointing is handled automatically.
     private final Output output;
-    private final String realHostName;
-    private final SyslogConfig syslogConfig;
     private final MetricRegistry metricRegistry;
 
-    EventDataConsumer(
-            final Sourceable configSource,
-            final Output output,
-            final String hostname,
-            final MetricRegistry metricRegistry
-    ) {
+    EventDataConsumer(final Output output, final MetricRegistry metricRegistry) {
         this.metricRegistry = metricRegistry;
         this.output = output;
-        this.realHostName = hostname;
-        this.syslogConfig = new SyslogConfig(configSource);
     }
 
     public void accept(final SyslogMessage syslogMessage) {

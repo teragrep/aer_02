@@ -77,12 +77,7 @@ public class EventDataConsumerTest {
         Map<String, Object> systemProps = new HashMap<>();
         systemProps.put("SequenceNumber", "1");
         MetricRegistry metricRegistry = new MetricRegistry();
-        EventDataConsumer eventDataConsumer = new EventDataConsumer(
-                configSource,
-                new OutputFake(),
-                new Hostname("localhost").hostname(),
-                metricRegistry
-        );
+        EventDataConsumer eventDataConsumer = new EventDataConsumer(new OutputFake(), metricRegistry);
 
         final double records = 10;
         for (int i = 0; i < records; i++) {
