@@ -86,7 +86,7 @@ final class EventDataConsumer {
         for (final ParsedEvent parsedEvent : parsedEvents) {
             final Plugin plugin;
             if (parsedEvent.isJsonStructure()) {
-                plugin = plugin(parsedEvent);
+                plugin = pluginFor(parsedEvent);
             }
             else {
                 plugin = defaultPlugin;
@@ -97,7 +97,7 @@ final class EventDataConsumer {
         }
     }
 
-    private Plugin plugin(final ParsedEvent parsedEvent) {
+    private Plugin pluginFor(final ParsedEvent parsedEvent) {
         Plugin rv;
         try {
             rv = mappedPlugins.getOrDefault(parsedEvent.resourceId(), defaultPlugin);
