@@ -49,7 +49,6 @@ import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;
 import com.teragrep.aer_02.config.SyslogConfig;
 import com.teragrep.aer_02.config.source.EnvironmentSource;
-import com.teragrep.aer_02.plugin.ResourceIdToPluginMap;
 import com.teragrep.akv_01.event.ParsedEvent;
 import com.teragrep.rlo_14.SDElement;
 import com.teragrep.rlo_14.SyslogMessage;
@@ -160,7 +159,7 @@ final class EventDataConsumer {
                 ClassNotFoundException | InvocationTargetException | NoSuchMethodException | InstantiationException
                 | IllegalAccessException e
         ) {
-            logger.throwing(ResourceIdToPluginMap.class.getName(), "asUnmodifiableMap", e);
+            logger.throwing(EventDataConsumer.class.getName(), "newPlugin", e);
             throw new IllegalStateException(e);
         }
     }
