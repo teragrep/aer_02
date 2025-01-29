@@ -48,7 +48,7 @@ package com.teragrep.aer_02;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;
 import com.teragrep.aer_02.fakes.OutputFake;
-import com.teragrep.aer_02.plugin.DefaultPlugin;
+import com.teragrep.aer_02.plugin.DefaultPluginFactory;
 import com.teragrep.akv_01.event.EventImpl;
 import com.teragrep.akv_01.event.ParsedEvent;
 import org.junit.jupiter.api.Assertions;
@@ -61,6 +61,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Logger;
 
 import static com.codahale.metrics.MetricRegistry.name;
 
@@ -79,9 +80,10 @@ public class EventDataConsumerTest {
         systemProps.put("SequenceNumber", "1");
         MetricRegistry metricRegistry = new MetricRegistry();
         EventDataConsumer eventDataConsumer = new EventDataConsumer(
+                Logger.getAnonymousLogger(),
                 new OutputFake(),
                 new HashMap<>(),
-                new DefaultPlugin("real", "host", "app"),
+                DefaultPluginFactory.class.getName(),
                 metricRegistry
         );
 

@@ -119,13 +119,14 @@ public class SyslogBridge {
             final LazyPluginMapInstance lazyPluginMapInstance = LazyPluginMapInstance.lazySingletonInstance();
 
             final DefaultOutput defaultOutput = lazyInstance.defaultOutput();
-            final Map<String, Plugin> mappedPlugins = lazyPluginMapInstance.mappedPlugins();
-            final Plugin defaultPlugin = lazyPluginMapInstance.defaultPlugin();
+            final Map<String, PluginFactoryConfig> pluginFactoryConfigs = lazyPluginMapInstance.pluginFactoryConfigs();
+            final String defaultPluginFactoryClassName = lazyPluginMapInstance.defaultPluginFactoryClassName();
 
             final EventDataConsumer consumer = new EventDataConsumer(
+                    context.getLogger(),
                     defaultOutput,
-                    mappedPlugins,
-                    defaultPlugin,
+                    pluginFactoryConfigs,
+                    defaultPluginFactoryClassName,
                     lazyInstance.metricRegistry()
             );
             consumer

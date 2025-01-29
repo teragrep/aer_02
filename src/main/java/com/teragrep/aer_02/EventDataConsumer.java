@@ -47,17 +47,23 @@ package com.teragrep.aer_02;
 
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;
+import com.teragrep.aer_02.config.SyslogConfig;
+import com.teragrep.aer_02.config.source.EnvironmentSource;
+import com.teragrep.aer_02.plugin.ResourceIdToPluginMap;
 import com.teragrep.akv_01.event.ParsedEvent;
 import com.teragrep.rlo_14.SDElement;
 import com.teragrep.rlo_14.SyslogMessage;
 import com.teragrep.rlo_14.*;
 import com.teragrep.akv_01.plugin.*;
+import jakarta.json.Json;
 import jakarta.json.JsonException;
 
+import java.lang.reflect.InvocationTargetException;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 import static com.codahale.metrics.MetricRegistry.name;
@@ -65,50 +71,101 @@ import static com.codahale.metrics.MetricRegistry.name;
 final class EventDataConsumer {
 
     // Note: Checkpointing is handled automatically.
+    private final Logger logger;
     private final Output output;
-    private final Map<String, Plugin> mappedPlugins;
+    private final Map<String, PluginFactoryConfig> pluginFactoryConfigs;
     private final MetricRegistry metricRegistry;
-    private final Plugin defaultPlugin;
+    private final String defaultPluginFactoryClassName;
+    private final SyslogConfig syslogConfig;
+    private final Hostname hostName;
 
     EventDataConsumer(
+            final Logger logger,
             final Output output,
-            final Map<String, Plugin> mappedPlugins,
-            final Plugin defaultPlugin,
+            final Map<String, PluginFactoryConfig> pluginFactoryConfigs,
+            final String defaultPluginFactoryClassName,
             final MetricRegistry metricRegistry
     ) {
+        this(
+                logger,
+                output,
+                pluginFactoryConfigs,
+                defaultPluginFactoryClassName,
+                metricRegistry,
+                new SyslogConfig(new EnvironmentSource()),
+                new Hostname("localhost")
+        );
+    }
+
+    EventDataConsumer(
+            final Logger logger,
+            final Output output,
+            final Map<String, PluginFactoryConfig> pluginFactoryConfigs,
+            final String defaultPluginFactoryClassName,
+            final MetricRegistry metricRegistry,
+            final SyslogConfig syslogConfig,
+            final Hostname hostName
+    ) {
+        this.logger = logger;
         this.metricRegistry = metricRegistry;
-        this.mappedPlugins = mappedPlugins;
-        this.defaultPlugin = defaultPlugin;
+        this.pluginFactoryConfigs = pluginFactoryConfigs;
+        this.defaultPluginFactoryClassName = defaultPluginFactoryClassName;
         this.output = output;
+        this.syslogConfig = syslogConfig;
+        this.hostName = hostName;
     }
 
     public void accept(final List<ParsedEvent> parsedEvents) {
         for (final ParsedEvent parsedEvent : parsedEvents) {
-            final Plugin plugin;
-            if (parsedEvent.isJsonStructure()) {
-                plugin = pluginFor(parsedEvent);
-            }
-            else {
-                plugin = defaultPlugin;
-            }
+            final Plugin plugin = pluginFor(parsedEvent);
 
             final List<SyslogMessage> syslogMessages = plugin.syslogMessage(parsedEvent);
-            syslogMessages.forEach(this::accept);
+            syslogMessages.forEach(this::sendToOutput);
         }
     }
 
     private Plugin pluginFor(final ParsedEvent parsedEvent) {
-        Plugin rv;
+        // default plugin config
+        PluginFactoryConfig pfc = new PluginFactoryConfigImpl(
+                defaultPluginFactoryClassName,
+                Json.createObjectBuilder().add("realHostname", hostName.hostname()).add("syslogHostname", syslogConfig.hostName()).add("syslogAppname", syslogConfig.appName()).build().toString()
+        );
+
+        if (!parsedEvent.isJsonStructure()) {
+            // non-json event cannot have a resourceId, return default
+            return newPlugin(pfc);
+        }
+
         try {
-            rv = mappedPlugins.getOrDefault(parsedEvent.resourceId(), defaultPlugin);
+            // Check if plugin config present for id
+            final String resourceId = parsedEvent.resourceId();
+            if (pluginFactoryConfigs.containsKey(resourceId)) {
+                pfc = pluginFactoryConfigs.get(resourceId);
+            }
         }
         catch (JsonException ignored) {
-            rv = defaultPlugin;
+            // ignore exception, use default plugin
         }
-        return rv;
+
+        return newPlugin(pfc);
     }
 
-    private void accept(final SyslogMessage syslogMessage) {
+    private Plugin newPlugin(final PluginFactoryConfig cfg) {
+        try {
+            return new PluginFactoryInitialization(cfg.pluginFactoryClassName())
+                    .pluginFactory()
+                    .plugin(cfg.configPath());
+        }
+        catch (
+                ClassNotFoundException | InvocationTargetException | NoSuchMethodException | InstantiationException
+                | IllegalAccessException e
+        ) {
+            logger.throwing(ResourceIdToPluginMap.class.getName(), "asUnmodifiableMap", e);
+            throw new IllegalStateException(e);
+        }
+    }
+
+    private void sendToOutput(final SyslogMessage syslogMessage) {
         final List<SDElement> partitionElements = syslogMessage
                 .getSDElements()
                 .stream()

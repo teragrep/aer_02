@@ -51,7 +51,7 @@ import com.teragrep.aer_02.config.source.EnvironmentSource;
 import com.teragrep.aer_02.config.source.Sourceable;
 import com.teragrep.aer_02.fakes.PartitionContextFake;
 import com.teragrep.aer_02.fakes.SystemPropsFake;
-import com.teragrep.aer_02.plugin.DefaultPlugin;
+import com.teragrep.aer_02.plugin.DefaultPluginFactory;
 import com.teragrep.akv_01.event.EventImpl;
 import com.teragrep.akv_01.event.ParsedEvent;
 import com.teragrep.net_01.channel.socket.TLSFactory;
@@ -185,9 +185,10 @@ public class EventDataConsumerTlsTest {
         );
 
         final EventDataConsumer edc = new EventDataConsumer(
+                Logger.getAnonymousLogger(),
                 output,
                 new HashMap<>(),
-                new DefaultPlugin("localhost.localdomain", "localhost.localdomain", "aer-02"),
+                DefaultPluginFactory.class.getName(),
                 metricRegistry
         );
 
