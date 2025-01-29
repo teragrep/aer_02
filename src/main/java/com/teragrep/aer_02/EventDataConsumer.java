@@ -47,13 +47,17 @@ package com.teragrep.aer_02;
 
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;
+import com.teragrep.akv_01.event.ParsedEvent;
 import com.teragrep.rlo_14.SDElement;
 import com.teragrep.rlo_14.SyslogMessage;
 import com.teragrep.rlo_14.*;
+import com.teragrep.akv_01.plugin.*;
+import jakarta.json.JsonException;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import static com.codahale.metrics.MetricRegistry.name;
@@ -62,14 +66,49 @@ final class EventDataConsumer {
 
     // Note: Checkpointing is handled automatically.
     private final Output output;
+    private final Map<String, Plugin> mappedPlugins;
     private final MetricRegistry metricRegistry;
+    private final Plugin defaultPlugin;
 
-    EventDataConsumer(final Output output, final MetricRegistry metricRegistry) {
+    EventDataConsumer(
+            final Output output,
+            final Map<String, Plugin> mappedPlugins,
+            final Plugin defaultPlugin,
+            final MetricRegistry metricRegistry
+    ) {
         this.metricRegistry = metricRegistry;
+        this.mappedPlugins = mappedPlugins;
+        this.defaultPlugin = defaultPlugin;
         this.output = output;
     }
 
-    public void accept(final SyslogMessage syslogMessage) {
+    public void accept(final List<ParsedEvent> parsedEvents) {
+        for (final ParsedEvent parsedEvent : parsedEvents) {
+            final Plugin plugin;
+            if (parsedEvent.isJsonStructure()) {
+                plugin = plugin(parsedEvent);
+            }
+            else {
+                plugin = defaultPlugin;
+            }
+
+            final List<SyslogMessage> syslogMessages = plugin.syslogMessage(parsedEvent);
+            syslogMessages.forEach(this::accept);
+        }
+    }
+
+    private Plugin plugin(final ParsedEvent parsedEvent) {
+        Plugin rv;
+        try {
+            rv = mappedPlugins.getOrDefault(parsedEvent.resourceId(), defaultPlugin);
+        }
+        catch (JsonException ignored) {
+            rv = defaultPlugin;
+        }
+        return rv;
+    }
+
+    private void accept(final SyslogMessage syslogMessage) {
         final List<SDElement> partitionElements = syslogMessage
                 .getSDElements()
                 .stream()
@@ -92,13 +131,7 @@ final class EventDataConsumer {
         final long timestampSecs = Instant.parse(syslogMessage.getTimestamp()).toEpochMilli() / 1000L;
 
         metricRegistry
-                .gauge(name(EventDataConsumer.class, "latency-seconds", partitionParams.get(0).getParamValue()), () -> new Gauge<Long>() {
-
-                    @Override
-                    public Long getValue() {
-                        return Instant.now().getEpochSecond() - timestampSecs;
-                    }
-                });
+                .gauge(name(EventDataConsumer.class, "latency-seconds", partitionParams.get(0).getParamValue()), () -> (Gauge<Long>) () -> Instant.now().getEpochSecond() - timestampSecs);
 
         output.accept(syslogMessage.toRfc5424SyslogMessage().getBytes(StandardCharsets.UTF_8));
     }

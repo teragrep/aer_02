@@ -52,6 +52,8 @@ import com.teragrep.aer_02.config.source.Sourceable;
 import com.teragrep.aer_02.fakes.PartitionContextFake;
 import com.teragrep.aer_02.fakes.SystemPropsFake;
 import com.teragrep.aer_02.plugin.DefaultPlugin;
+import com.teragrep.akv_01.event.EventImpl;
+import com.teragrep.akv_01.event.ParsedEvent;
 import com.teragrep.net_01.channel.socket.TLSFactory;
 import com.teragrep.net_01.eventloop.EventLoop;
 import com.teragrep.net_01.eventloop.EventLoopFactory;
@@ -80,7 +82,6 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
-import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -183,7 +184,12 @@ public class EventDataConsumerTlsTest {
                 sslContextSupplier
         );
 
-        final EventDataConsumer edc = new EventDataConsumer(output, metricRegistry);
+        final EventDataConsumer edc = new EventDataConsumer(
+                output,
+                new HashMap<>(),
+                new DefaultPlugin("localhost.localdomain", "localhost.localdomain", "aer-02"),
+                metricRegistry
+        );
 
         // Fake data
         PartitionContextFake pcf = new PartitionContextFake("eventhub.123", "test1", "$Default", "0");
@@ -198,11 +204,13 @@ public class EventDataConsumerTlsTest {
         List<String> offsets = Arrays.asList("0", "1", "2");
         List<String> enqueuedArray = Arrays.asList("2010-01-01T00:00:00", "2010-01-02T00:00:00", "2010-01-03T00:00:00");
 
+        List<ParsedEvent> parsedEvents = new ArrayList<>();
         for (int i = 0; i < eventDatas.size(); i++) {
-            edc
-                    .accept((new DefaultPlugin("localhost.localdomain", "localhost.localdomain", "aer-02").syslogMessage(eventDatas.get(i), pcf.asMap(), ZonedDateTime.parse(enqueuedArray.get(i) + "Z"), offsets.get(i), propsArray[i], sysPropsArray[i])));
+            parsedEvents
+                    .add(new EventImpl(eventDatas.get(i), pcf.asMap(), propsArray[i], sysPropsArray[i], enqueuedArray.get(i), offsets.get(i)).parsedEvent());
         }
 
+        edc.accept(parsedEvents);
         Assertions.assertEquals(3, messages.size());
 
         int loops = 0;

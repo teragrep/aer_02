@@ -46,85 +46,76 @@
 package com.teragrep.aer_02.json;
 
 import jakarta.json.Json;
+import jakarta.json.JsonException;
+import jakarta.json.JsonStructure;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+
+import java.util.List;
 
 public class JsonRecordsTest {
 
     @Test
     void testJsonArrayCase() {
-        final String records = Json.createArrayBuilder().add(0, 1).add(1, 2).build().toString();
+        final JsonStructure records = Json.createArrayBuilder().add(0, 1).add(1, 2).build();
         JsonRecords jr = new JsonRecords(records);
-        final String[] result = jr.records();
-        Assertions.assertEquals(1, result.length);
-        Assertions.assertEquals("[1,2]", result[0]);
+        Assertions.assertThrows(JsonException.class, () -> jr.records());
     }
 
     @Test
     void testEmptyJsonObjectCase() {
-        final String records = Json.createObjectBuilder().build().toString();
+        final JsonStructure records = Json.createObjectBuilder().build();
         JsonRecords jr = new JsonRecords(records);
-        final String[] result = jr.records();
-        Assertions.assertEquals(1, result.length);
-        Assertions.assertEquals("{}", result[0]);
+        Assertions.assertThrows(JsonException.class, () -> jr.records());
     }
 
     @Test
     void testOtherJsonObjectCase() {
-        final String records = Json.createObjectBuilder().add("k1", "v1").add("k2", "v2").build().toString();
+        final JsonStructure records = Json.createObjectBuilder().add("k1", "v1").add("k2", "v2").build();
         JsonRecords jr = new JsonRecords(records);
-        final String[] result = jr.records();
-        Assertions.assertEquals(1, result.length);
-        Assertions.assertEquals("{\"k1\":\"v1\",\"k2\":\"v2\"}", result[0]);
+        Assertions.assertThrows(JsonException.class, () -> jr.records());
     }
 
     @Test
     void testRecordsAsObjectsCase() {
-        final String records = Json
+        final JsonStructure records = Json
                 .createObjectBuilder()
-                .add("records", Json.createArrayBuilder().add(Json.createObjectBuilder().add("a", "b")).add(Json.createObjectBuilder().add("c", "d"))).build().toString();
+                .add("records", Json.createArrayBuilder().add(Json.createObjectBuilder().add("a", "b")).add(Json.createObjectBuilder().add("c", "d"))).build();
         JsonRecords jr = new JsonRecords(records);
-        final String[] result = jr.records();
-        Assertions.assertEquals(2, result.length);
-        Assertions.assertEquals("{\"a\":\"b\"}", result[0]);
-        Assertions.assertEquals("{\"c\":\"d\"}", result[1]);
+        final List<String> result = jr.records();
+        Assertions.assertEquals(2, result.size());
+        Assertions.assertEquals("{\"a\":\"b\"}", result.get(0));
+        Assertions.assertEquals("{\"c\":\"d\"}", result.get(1));
     }
 
     @Test
     void testRecordsAsStringsAndNumbersCase() {
-        final String records = Json
+        final JsonStructure records = Json
                 .createObjectBuilder()
                 .add("records", Json.createArrayBuilder().add("abc").add(123).build())
-                .build()
-                .toString();
+                .build();
         JsonRecords jr = new JsonRecords(records);
-        final String[] result = jr.records();
-        Assertions.assertEquals(2, result.length);
-        Assertions.assertEquals("\"abc\"", result[0]);
-        Assertions.assertEquals("123", result[1]);
-    }
-
-    @Test
-    void testNonJsonRecordsCase() {
-        final String records = "{{]///...<>;";
-        JsonRecords jr = new JsonRecords(records);
-        final String[] result = jr.records();
-        Assertions.assertEquals(1, result.length);
-        Assertions.assertEquals("{{]///...<>;", result[0]);
+        final List<String> result = jr.records();
+        Assertions.assertEquals(2, result.size());
+        Assertions.assertEquals("\"abc\"", result.get(0));
+        Assertions.assertEquals("123", result.get(1));
     }
 
     @Test
     void testEquals() {
-        JsonRecords jr = new JsonRecords("{\"a\":\"b\",\"c\":\"d\"}");
-        JsonRecords jr2 = new JsonRecords("{\"a\":\"b\",\"c\":\"d\"}");
+        final JsonStructure json = Json.createObjectBuilder().add("a", "b").add("c", "d").build();
+        JsonRecords jr = new JsonRecords(json);
+        JsonRecords jr2 = new JsonRecords(json);
         Assertions.assertEquals(jr, jr2);
     }
 
     @Test
     void testNotEquals() {
-        JsonRecords jr = new JsonRecords("{\"a\":\"b\",\"c\":\"d\"}");
-        JsonRecords jr2 = new JsonRecords("{\"e\":\"f\",\"g\":\"h\"}");
+        final JsonStructure json = Json.createObjectBuilder().add("a", "b").add("c", "d").build();
+        final JsonStructure json2 = Json.createObjectBuilder().add("e", "f").add("g", "h").build();
+        JsonRecords jr = new JsonRecords(json);
+        JsonRecords jr2 = new JsonRecords(json2);
         Assertions.assertNotEquals(jr, jr2);
     }
 

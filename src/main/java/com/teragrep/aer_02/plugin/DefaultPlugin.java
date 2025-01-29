@@ -45,15 +45,18 @@
  */
 package com.teragrep.aer_02.plugin;
 
+import com.teragrep.aer_02.json.JsonRecords;
+import com.teragrep.akv_01.event.ParsedEvent;
 import com.teragrep.akv_01.plugin.Plugin;
 import com.teragrep.rlo_14.Facility;
 import com.teragrep.rlo_14.SDElement;
 import com.teragrep.rlo_14.Severity;
 import com.teragrep.rlo_14.SyslogMessage;
+import jakarta.json.JsonException;
 
 import java.time.Instant;
-import java.time.ZonedDateTime;
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -70,14 +73,9 @@ public final class DefaultPlugin implements Plugin {
     }
 
     @Override
-    public SyslogMessage syslogMessage(
-            final String eventData,
-            final Map<String, Object> partitionContext,
-            final ZonedDateTime enqueuedTime,
-            final String offset,
-            final Map<String, Object> props,
-            final Map<String, Object> systemProps
-    ) {
+    public List<SyslogMessage> syslogMessage(final ParsedEvent parsedEvent) {
+        final List<SyslogMessage> syslogMessages = new ArrayList<>();
+
         final SDElement sdId = new SDElement("event_id@48577")
                 .addSDParam("uuid", UUID.randomUUID().toString())
                 .addSDParam("hostname", realHostname)
@@ -87,37 +85,46 @@ public final class DefaultPlugin implements Plugin {
         final SDElement sdPartition = new SDElement("aer_02_partition@48577")
                 .addSDParam(
                         "fully_qualified_namespace",
-                        String.valueOf(partitionContext.getOrDefault("FullyQualifiedNamespace", ""))
+                        String.valueOf(parsedEvent.partitionContext().getOrDefault("FullyQualifiedNamespace", ""))
                 )
-                .addSDParam("eventhub_name", String.valueOf(partitionContext.getOrDefault("EventHubName", "")))
-                .addSDParam("partition_id", String.valueOf(partitionContext.getOrDefault("PartitionId", "")))
-                .addSDParam("consumer_group", String.valueOf(partitionContext.getOrDefault("ConsumerGroup", "")));
+                .addSDParam(
+                        "eventhub_name", String.valueOf(parsedEvent.partitionContext().getOrDefault("EventHubName", ""))
+                )
+                .addSDParam("partition_id", String.valueOf(parsedEvent.partitionContext().getOrDefault("PartitionId", ""))).addSDParam("consumer_group", String.valueOf(parsedEvent.partitionContext().getOrDefault("ConsumerGroup", "")));
 
-        final String partitionKey = String.valueOf(systemProps.getOrDefault("PartitionKey", ""));
+        final String partitionKey = String.valueOf(parsedEvent.systemProperties().getOrDefault("PartitionKey", ""));
 
         final SDElement sdEvent = new SDElement("aer_02_event@48577")
-                .addSDParam("offset", offset == null ? "" : offset)
-                .addSDParam("enqueued_time", enqueuedTime == null ? "" : enqueuedTime.toString())
+                .addSDParam("offset", parsedEvent.offset() == null ? "" : parsedEvent.offset())
+                .addSDParam(
+                        "enqueued_time", parsedEvent.enqueuedTime() == null ? "" : parsedEvent.enqueuedTime().toString()
+                )
                 .addSDParam("partition_key", partitionKey == null ? "" : partitionKey);
-        props.forEach((key, value) -> sdEvent.addSDParam("property_" + key, value.toString()));
+        parsedEvent.properties().forEach((key, value) -> sdEvent.addSDParam("property_" + key, value.toString()));
 
         final SDElement sdComponentInfo = new SDElement("aer_02@48577")
-                .addSDParam("timestamp_source", enqueuedTime == null ? "generated" : "timeEnqueued");
+                .addSDParam("timestamp_source", parsedEvent.enqueuedTime() == null ? "generated" : "timeEnqueued");
 
-        return new SyslogMessage()
-                .withSeverity(Severity.INFORMATIONAL)
-                .withFacility(Facility.LOCAL0)
-                .withTimestamp(
-                        enqueuedTime == null ? Instant.now().toEpochMilli() : enqueuedTime.toInstant().toEpochMilli()
-                )
-                .withHostname(syslogHostname)
-                .withAppName(syslogAppname)
-                .withSDElement(sdId)
-                .withSDElement(sdPartition)
-                .withSDElement(sdEvent)
-                .withSDElement(sdComponentInfo)
-                .withMsgId(String.valueOf(systemProps.getOrDefault("SequenceNumber", "0")))
-                .withMsg(eventData);
+        List<String> records = new ArrayList<>();
+        if (parsedEvent.isJsonStructure()) {
+            JsonRecords jsonRecords = new JsonRecords(parsedEvent.asJsonStructure());
+            try {
+                records = jsonRecords.records();
+            }
+            catch (JsonException ignored) {
+                records.add(parsedEvent.asString());
+            }
+        }
+        else {
+            records.add(parsedEvent.asString());
+        }
+
+        records.forEach(record -> {
+            syslogMessages
+                    .add(new SyslogMessage().withSeverity(Severity.INFORMATIONAL).withFacility(Facility.LOCAL0).withTimestamp(parsedEvent.enqueuedTime() == null ? Instant.now().toEpochMilli() : parsedEvent.enqueuedTime().toInstant().toEpochMilli()).withHostname(syslogHostname).withAppName(syslogAppname).withSDElement(sdId).withSDElement(sdPartition).withSDElement(sdEvent).withSDElement(sdComponentInfo).withMsgId(String.valueOf(parsedEvent.systemProperties().getOrDefault("SequenceNumber", "0"))).withMsg(record));
+        });
+
+        return syslogMessages;
     }
 
     @Override

@@ -45,14 +45,15 @@
  */
 package com.teragrep.aer_02.plugin;
 
+import com.teragrep.akv_01.event.EventImpl;
 import com.teragrep.rlo_14.SyslogMessage;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public final class DefaultPluginTest {
@@ -67,18 +68,19 @@ public final class DefaultPluginTest {
         final Map<String, Object> props = new HashMap<>();
         final Map<String, Object> systemProps = new HashMap<>();
         systemProps.put("SequenceNumber", "1");
-        final ZonedDateTime enqueuedTime = ZonedDateTime.of(2025, 1, 1, 1, 1, 1, 0, ZoneId.of("UTC"));
+        final String enqueuedTime = "2025-01-01T01:01:01";
 
         final DefaultPlugin defaultPlugin = new DefaultPlugin("realHostname", "syslogHostname", "syslogAppname");
-        final SyslogMessage msg = defaultPlugin
-                .syslogMessage("event", partitionContext, enqueuedTime, "0", props, systemProps);
+        final List<SyslogMessage> msg = defaultPlugin
+                .syslogMessage(new EventImpl("event", partitionContext, props, systemProps, enqueuedTime, "0").parsedEvent());
 
-        Assertions.assertEquals("event", msg.getMsg());
+        Assertions.assertEquals("event", msg.get(0).getMsg());
         // aer_02@48577; aer_02_event@48577; aer_02_partition@48577; event_id@48577
-        Assertions.assertEquals(4, msg.getSDElements().size());
-        Assertions.assertEquals("syslogHostname", msg.getHostname());
-        Assertions.assertEquals("syslogAppname", msg.getAppName());
-        Assertions.assertEquals(enqueuedTime.toInstant().toString(), msg.getTimestamp());
+        Assertions.assertEquals(4, msg.get(0).getSDElements().size());
+        Assertions.assertEquals("syslogHostname", msg.get(0).getHostname());
+        Assertions.assertEquals("syslogAppname", msg.get(0).getAppName());
+        Assertions
+                .assertEquals(ZonedDateTime.parse(enqueuedTime + "Z").toInstant().toString(), msg.get(0).getTimestamp());
     }
 
     @Test

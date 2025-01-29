@@ -47,17 +47,13 @@ package com.teragrep.aer_02;
 
 import com.microsoft.azure.functions.*;
 import com.microsoft.azure.functions.annotation.*;
-import com.teragrep.aer_02.json.JsonRecords;
-import com.teragrep.aer_02.json.JsonResourceId;
 import com.teragrep.aer_02.plugin.LazyPluginMapInstance;
+import com.teragrep.akv_01.event.ParsedEventListFactory;
 import com.teragrep.akv_01.plugin.*;
-import com.teragrep.rlo_14.SyslogMessage;
 import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.exporter.common.TextFormat;
-import jakarta.json.JsonException;
 
 import java.io.*;
-import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -119,51 +115,31 @@ public class SyslogBridge {
                 context.getLogger().fine("eventHubTriggerToSyslog triggered");
                 context.getLogger().fine("Got events: " + events.length);
             }
-
             final LazyInstance lazyInstance = LazyInstance.lazySingletonInstance();
-            final DefaultOutput defaultOutput = lazyInstance.defaultOutput();
-
             final LazyPluginMapInstance lazyPluginMapInstance = LazyPluginMapInstance.lazySingletonInstance();
 
+            final DefaultOutput defaultOutput = lazyInstance.defaultOutput();
             final Map<String, Plugin> mappedPlugins = lazyPluginMapInstance.mappedPlugins();
             final Plugin defaultPlugin = lazyPluginMapInstance.defaultPlugin();
 
-            final EventDataConsumer consumer = new EventDataConsumer(defaultOutput, lazyInstance.metricRegistry());
+            final EventDataConsumer consumer = new EventDataConsumer(
+                    defaultOutput,
+                    mappedPlugins,
+                    defaultPlugin,
+                    lazyInstance.metricRegistry()
+            );
+            consumer
+                    .accept(
+                            new ParsedEventListFactory(
+                                    events,
+                                    partitionContext,
+                                    propertiesArray,
+                                    systemPropertiesArray,
+                                    enqueuedTimeUtcArray,
+                                    offsetArray
+                            ).asList()
+                    );
 
-            for (int index = 0; index < events.length; index++) {
-                final String event = events[index];
-                if (event != null) {
-                    final ZonedDateTime et = ZonedDateTime.parse(enqueuedTimeUtcArray.get(index) + "Z"); // needed as the UTC time presented does not have a TZ
-                    if (context.getLogger().isLoggable(Level.FINE)) {
-                        context.getLogger().fine("Accepting event: " + event);
-                    }
-
-                    Plugin plugin;
-                    try {
-                        final String jsonResourceId = new JsonResourceId(event).resourceId();
-                        plugin = mappedPlugins.getOrDefault(jsonResourceId, defaultPlugin);
-                    }
-                    catch (JsonException e) {
-                        context
-                                .getLogger()
-                                .throwing(
-                                        SyslogBridge.class.getName(),
-                                        "Could not parse resourceId from event payload, defaulting to DefaultPlugin", e
-                                );
-                        plugin = defaultPlugin;
-                    }
-
-                    final String[] records = new JsonRecords(event).records();
-                    for (final String record : records) {
-                        final SyslogMessage outputMsg = plugin
-                                .syslogMessage(record, partitionContext, et, offsetArray.get(index), propertiesArray[index], systemPropertiesArray[index]);
-                        consumer.accept(outputMsg);
-                    }
-                }
-                else {
-                    context.getLogger().warning("eventHubTriggerToSyslog event data is null");
-                }
-            }
         }
         catch (Throwable t) {
             if (context.getLogger().isLoggable(Level.SEVERE)) {

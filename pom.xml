@@ -51,7 +51,7 @@
     <dependency>
       <groupId>com.teragrep</groupId>
       <artifactId>akv_01</artifactId>
-      <version>1.0.1</version>
+      <version>0.0.1-SNAPSHOT</version>
     </dependency>
     <!-- Azure functions -->
     <dependency>

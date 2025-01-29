@@ -45,6 +45,7 @@
  */
 package com.teragrep.aer_02.plugin;
 
+import com.teragrep.akv_01.event.EventImpl;
 import com.teragrep.akv_01.plugin.Plugin;
 import com.teragrep.akv_01.plugin.PluginFactory;
 import com.teragrep.akv_01.plugin.PluginFactoryInitialization;
@@ -53,9 +54,9 @@ import jakarta.json.Json;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import java.time.Instant;
-import java.time.ZonedDateTime;
+import java.time.*;
 import java.util.HashMap;
+import java.util.List;
 
 public final class DefaultPluginFactoryTest {
 
@@ -64,14 +65,18 @@ public final class DefaultPluginFactoryTest {
         final DefaultPluginFactory factory = new DefaultPluginFactory();
         final Plugin plugin = Assertions
                 .assertDoesNotThrow(() -> factory.plugin(Json.createObjectBuilder().add("realHostname", "hostname").add("syslogHostname", "hostname").add("syslogAppname", "appname").build().toString()));
-        final ZonedDateTime now = ZonedDateTime.now();
-        final SyslogMessage msg = Assertions
+        final LocalDateTime now = LocalDateTime.now(ZoneId.of("Z"));
+        final List<SyslogMessage> msg = Assertions
                 .assertDoesNotThrow(
-                        () -> plugin.syslogMessage("msg", new HashMap<>(), now, "", new HashMap<>(), new HashMap<>())
+                        () -> plugin
+                                .syslogMessage(
+                                        new EventImpl("msg", new HashMap<>(), new HashMap<>(), new HashMap<>(), now, "").parsedEvent()
+                                )
                 );
         Assertions.assertEquals(DefaultPlugin.class, plugin.getClass());
-        Assertions.assertEquals("msg", msg.getMsg());
-        Assertions.assertEquals(Instant.ofEpochMilli(now.toInstant().toEpochMilli()).toString(), msg.getTimestamp());
+        Assertions.assertEquals("msg", msg.get(0).getMsg());
+        Assertions
+                .assertEquals(Instant.ofEpochMilli(now.toInstant(ZoneOffset.UTC).toEpochMilli()).toString(), msg.get(0).getTimestamp());
     }
 
     @Test

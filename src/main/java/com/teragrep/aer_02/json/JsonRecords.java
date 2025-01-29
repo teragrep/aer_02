@@ -45,18 +45,20 @@
  */
 package com.teragrep.aer_02.json;
 
-import jakarta.json.*;
-import jakarta.json.stream.JsonParsingException;
+import jakarta.json.JsonStructure;
+import jakarta.json.JsonArray;
+import jakarta.json.JsonValue;
+import jakarta.json.JsonException;
 
-import java.io.StringReader;
+import java.util.List;
 import java.util.Objects;
 
 public final class JsonRecords {
 
-    private final String event;
+    private final JsonStructure json;
 
-    public JsonRecords(final String event) {
-        this.event = event;
+    public JsonRecords(final JsonStructure json) {
+        this.json = json;
     }
 
     /**
@@ -64,47 +66,26 @@ public final class JsonRecords {
      * 
      * @return individual records as an array or the original event.
      */
-    public String[] records() {
-        final String[] rv = new String[] {
-                event
-        };
-
-        final JsonStructure mainStructure;
-        try (final StringReader stringReader = new StringReader(event)) {
-            try (final JsonReader reader = Json.createReader(stringReader)) {
-                mainStructure = reader.read();
-            }
-            catch (JsonParsingException e) {
-                // pass event through as-is if JSON parsing fails
-                return rv;
-            }
+    public List<String> records() throws JsonException {
+        if (json == null || !json.getValueType().equals(JsonValue.ValueType.OBJECT)) {
+            // if top-level structure is not object or doesn't exist
+            throw new JsonException("Main structure does not exist or it is not a JSON object");
         }
 
-        if (mainStructure == null || !mainStructure.getValueType().equals(JsonValue.ValueType.OBJECT)) {
-            // pass event through as-is if top-level structure is not object or doesn't exist
-            return rv;
+        final JsonValue recordsStructure = json.asJsonObject().get("records");
+
+        if (recordsStructure == null || !recordsStructure.getValueType().equals(JsonValue.ValueType.ARRAY)) {
+            // if "records" is not an array type or doesn't exist
+            throw new JsonException("Main object does not contain an array with the key 'records'");
         }
 
-        final JsonValue recordsStructure = mainStructure.asJsonObject().get("records");
-
-        if (recordsStructure != null && recordsStructure.getValueType().equals(JsonValue.ValueType.ARRAY)) {
-            final JsonArray recordsArray = recordsStructure.asJsonArray();
-            String[] records = new String[recordsArray.size()];
-
-            for (int i = 0; i < recordsArray.size(); i++) {
-                // Take string representation of inner value regardless of actual datatype
-                records[i] = recordsArray.get(i).toString();
-            }
-
-            return records;
-        }
-
-        // pass event through as-is if "records" is not an array type or doesn't exist
-        return rv;
+        final JsonArray recordsArray = recordsStructure.asJsonArray();
+        // Take string representation of inner value regardless of actual datatype
+        return recordsArray.getValuesAs(JsonValue::toString);
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
         if (this == o) {
             return true;
         }
@@ -113,12 +94,12 @@ public final class JsonRecords {
             return false;
         }
 
-        JsonRecords that = (JsonRecords) o;
-        return Objects.equals(event, that.event);
+        final JsonRecords that = (JsonRecords) o;
+        return Objects.equals(json, that.json);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hashCode(event);
+        return Objects.hashCode(json);
     }
 }
