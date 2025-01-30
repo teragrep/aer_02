@@ -105,6 +105,22 @@ public final class MappedPluginFactoriesTest {
     }
 
     @Test
+    void testWithInvalidPluginFactory() {
+        final Map<String, PluginFactoryConfig> configs = new HashMap<>();
+        configs.put("123", new PluginFactoryConfigImpl("invalid", "path"));
+        final MappedPluginFactories mappedPluginFactories = new MappedPluginFactories(
+                configs,
+                "invalid",
+                "host",
+                new SyslogConfig("app", "host"),
+                Logger.getAnonymousLogger()
+        );
+
+        Assertions.assertThrows(IllegalStateException.class, mappedPluginFactories::asUnmodifiableMap);
+        Assertions.assertThrows(IllegalStateException.class, mappedPluginFactories::defaultPluginFactoryWithConfig);
+    }
+
+    @Test
     void testEqualsContract() {
         EqualsVerifier
                 .forClass(MappedPluginFactories.class)
