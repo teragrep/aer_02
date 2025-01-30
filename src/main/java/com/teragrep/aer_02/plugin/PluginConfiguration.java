@@ -65,7 +65,7 @@ public final class PluginConfiguration {
     public JsonStructure asJson() throws IOException {
         final String configPath = configSource.source("plugins.config.path", "");
 
-        if (configPath == null || configPath.isEmpty()) {
+        if (configPath.isEmpty()) {
             return Json
                     .createObjectBuilder()
                     .add("defaultPluginFactoryClass", "com.teragrep.aer_02.plugin.DefaultPluginFactory")
