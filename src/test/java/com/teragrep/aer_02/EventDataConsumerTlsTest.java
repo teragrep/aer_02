@@ -52,8 +52,10 @@ import com.teragrep.aer_02.config.source.Sourceable;
 import com.teragrep.aer_02.fakes.PartitionContextFake;
 import com.teragrep.aer_02.fakes.SystemPropsFake;
 import com.teragrep.aer_02.plugin.DefaultPluginFactory;
+import com.teragrep.aer_02.plugin.WrappedPluginFactoryWithConfig;
 import com.teragrep.akv_01.event.EventImpl;
 import com.teragrep.akv_01.event.ParsedEvent;
+import com.teragrep.akv_01.plugin.PluginFactoryConfigImpl;
 import com.teragrep.net_01.channel.socket.TLSFactory;
 import com.teragrep.net_01.eventloop.EventLoop;
 import com.teragrep.net_01.eventloop.EventLoopFactory;
@@ -66,6 +68,7 @@ import com.teragrep.rlp_03.frame.FrameDelegationClockFactory;
 import com.teragrep.rlp_03.frame.delegate.DefaultFrameDelegate;
 import com.teragrep.rlp_03.frame.delegate.FrameContext;
 import com.teragrep.rlp_03.frame.delegate.FrameDelegate;
+import jakarta.json.Json;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -188,7 +191,13 @@ public class EventDataConsumerTlsTest {
                 Logger.getAnonymousLogger(),
                 output,
                 new HashMap<>(),
-                DefaultPluginFactory.class.getName(),
+                new WrappedPluginFactoryWithConfig(
+                        new DefaultPluginFactory(),
+                        new PluginFactoryConfigImpl(
+                                DefaultPluginFactory.class.getName(),
+                                Json.createObjectBuilder().add("realHostname", "localhost.localdomain").add("syslogHostname", "localhost.localdomain").add("syslogAppname", "aer-02").build().toString()
+                        )
+                ),
                 metricRegistry
         );
 

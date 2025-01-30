@@ -48,8 +48,8 @@ package com.teragrep.aer_02;
 import com.microsoft.azure.functions.*;
 import com.microsoft.azure.functions.annotation.*;
 import com.teragrep.aer_02.plugin.LazyPluginMapInstance;
+import com.teragrep.aer_02.plugin.WrappedPluginFactoryWithConfig;
 import com.teragrep.akv_01.event.ParsedEventListFactory;
-import com.teragrep.akv_01.plugin.*;
 import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.exporter.common.TextFormat;
 
@@ -119,14 +119,14 @@ public class SyslogBridge {
             final LazyPluginMapInstance lazyPluginMapInstance = LazyPluginMapInstance.lazySingletonInstance();
 
             final DefaultOutput defaultOutput = lazyInstance.defaultOutput();
-            final Map<String, PluginFactoryConfig> pluginFactoryConfigs = lazyPluginMapInstance.pluginFactoryConfigs();
-            final String defaultPluginFactoryClassName = lazyPluginMapInstance.defaultPluginFactoryClassName();
+            final Map<String, WrappedPluginFactoryWithConfig> pluginFactories = lazyPluginMapInstance.pluginFactories();
+            final WrappedPluginFactoryWithConfig defaultPluginFactory = lazyPluginMapInstance.defaultPluginFactory();
 
             final EventDataConsumer consumer = new EventDataConsumer(
                     context.getLogger(),
                     defaultOutput,
-                    pluginFactoryConfigs,
-                    defaultPluginFactoryClassName,
+                    pluginFactories,
+                    defaultPluginFactory,
                     lazyInstance.metricRegistry()
             );
             consumer

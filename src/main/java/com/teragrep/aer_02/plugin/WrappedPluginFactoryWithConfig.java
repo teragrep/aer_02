@@ -45,26 +45,27 @@
  */
 package com.teragrep.aer_02.plugin;
 
-import com.teragrep.akv_01.plugin.Plugin;
 import com.teragrep.akv_01.plugin.PluginFactory;
-import jakarta.json.Json;
-import jakarta.json.JsonObject;
-import jakarta.json.JsonReader;
+import com.teragrep.akv_01.plugin.PluginFactoryConfig;
 
-import java.io.StringReader;
+public final class WrappedPluginFactoryWithConfig {
 
-public final class DefaultPluginFactory implements PluginFactory {
+    private final PluginFactory pluginFactory;
+    private final PluginFactoryConfig pluginFactoryConfig;
 
-    @Override
-    public synchronized Plugin plugin(final String json) {
-        final JsonObject jsonObject;
-        try (JsonReader reader = Json.createReader(new StringReader(json))) {
-            jsonObject = reader.readObject();
-        }
-        return new DefaultPlugin(
-                jsonObject.getString("realHostname"),
-                jsonObject.getString("syslogHostname"),
-                jsonObject.getString("syslogAppname")
-        );
+    public WrappedPluginFactoryWithConfig(
+            final PluginFactory pluginFactory,
+            final PluginFactoryConfig pluginFactoryConfig
+    ) {
+        this.pluginFactory = pluginFactory;
+        this.pluginFactoryConfig = pluginFactoryConfig;
+    }
+
+    public PluginFactoryConfig pluginFactoryConfig() {
+        return pluginFactoryConfig;
+    }
+
+    public PluginFactory pluginFactory() {
+        return pluginFactory;
     }
 }

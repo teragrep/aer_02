@@ -56,7 +56,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.logging.Logger;
 
-public final class ResourceIdToPluginMap {
+public final class MappedPluginFactories {
 
     private final Map<String, PluginFactoryConfig> pluginFactoryConfigs;
     private final String defaultPluginFactoryClassName;
@@ -64,7 +64,7 @@ public final class ResourceIdToPluginMap {
     private final SyslogConfig syslogConfig;
     private final Logger logger;
 
-    public ResourceIdToPluginMap(
+    public MappedPluginFactories(
             final Map<String, PluginFactoryConfig> pluginFactoryConfigs,
             final String defaultPluginFactoryClassName,
             final String realHostname,
@@ -78,14 +78,14 @@ public final class ResourceIdToPluginMap {
         this.logger = logger;
     }
 
-    public Map<String, Plugin> asUnmodifiableMap() {
-        final Map<String, Plugin> rv = new HashMap<>();
-        pluginFactoryConfigs.forEach((id, cfg) -> rv.put(id, newPlugin(cfg)));
+    public Map<String, WrappedPluginFactoryWithConfig> asUnmodifiableMap() {
+        final Map<String, WrappedPluginFactoryWithConfig> rv = new HashMap<>();
+        pluginFactoryConfigs.forEach((id, cfg) -> rv.put(id, newWrappedPluginFactoryWithConfig(cfg)));
         return Collections.unmodifiableMap(rv);
     }
 
-    public Plugin defaultPlugin() {
-        return newPlugin(
+    public WrappedPluginFactoryWithConfig defaultPluginFactoryWithConfig() {
+        return newWrappedPluginFactoryWithConfig(
                 new PluginFactoryConfigImpl(
                         defaultPluginFactoryClassName,
                         Json.createObjectBuilder().add("realHostname", realHostname).add("syslogHostname", syslogConfig.hostName()).add("syslogAppname", syslogConfig.appName()).build().toString()
@@ -93,17 +93,18 @@ public final class ResourceIdToPluginMap {
         );
     }
 
-    private Plugin newPlugin(final PluginFactoryConfig cfg) {
+    private WrappedPluginFactoryWithConfig newWrappedPluginFactoryWithConfig(final PluginFactoryConfig cfg) {
         try {
-            return new PluginFactoryInitialization(cfg.pluginFactoryClassName())
-                    .pluginFactory()
-                    .plugin(cfg.configPath());
+            return new WrappedPluginFactoryWithConfig(
+                    new PluginFactoryInitialization(cfg.pluginFactoryClassName()).pluginFactory(),
+                    cfg
+            );
         }
         catch (
                 ClassNotFoundException | InvocationTargetException | NoSuchMethodException | InstantiationException
                 | IllegalAccessException e
         ) {
-            logger.throwing(ResourceIdToPluginMap.class.getName(), "asUnmodifiableMap", e);
+            logger.throwing(MappedPluginFactories.class.getName(), "newWrappedPluginFactoryWithConfig", e);
             throw new IllegalStateException(e);
         }
     }
@@ -113,7 +114,7 @@ public final class ResourceIdToPluginMap {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        ResourceIdToPluginMap that = (ResourceIdToPluginMap) o;
+        MappedPluginFactories that = (MappedPluginFactories) o;
         return Objects.equals(pluginFactoryConfigs, that.pluginFactoryConfigs) && Objects
                 .equals(defaultPluginFactoryClassName, that.defaultPluginFactoryClassName)
                 && Objects.equals(realHostname, that.realHostname) && Objects.equals(syslogConfig, that.syslogConfig);

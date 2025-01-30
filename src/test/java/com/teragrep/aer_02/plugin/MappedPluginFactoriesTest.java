@@ -46,8 +46,7 @@
 package com.teragrep.aer_02.plugin;
 
 import com.teragrep.aer_02.config.SyslogConfig;
-import com.teragrep.aer_02.fakes.ThrowingPlugin;
-import com.teragrep.akv_01.plugin.Plugin;
+import com.teragrep.aer_02.fakes.ThrowingPluginFactory;
 import com.teragrep.akv_01.plugin.PluginFactoryConfig;
 import com.teragrep.akv_01.plugin.PluginFactoryConfigImpl;
 import nl.jqno.equalsverifier.EqualsVerifier;
@@ -58,14 +57,14 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Logger;
 
-public final class ResourceIdToPluginMapTest {
+public final class MappedPluginFactoriesTest {
 
     @Test
     void testWithOnePluginFactory() {
         final Map<String, PluginFactoryConfig> configs = new HashMap<>();
         configs.put("123", new PluginFactoryConfigImpl("com.teragrep.aer_02.fakes.ThrowingPluginFactory", "path"));
 
-        final ResourceIdToPluginMap resourceIdToPluginMap = new ResourceIdToPluginMap(
+        final MappedPluginFactories mappedPluginFactories = new MappedPluginFactories(
                 configs,
                 "com.teragrep.aer_02.plugin.DefaultPluginFactory",
                 "host",
@@ -73,18 +72,22 @@ public final class ResourceIdToPluginMapTest {
                 Logger.getAnonymousLogger()
         );
 
-        Map<String, Plugin> plugins = resourceIdToPluginMap.asUnmodifiableMap();
+        Map<String, WrappedPluginFactoryWithConfig> plugins = mappedPluginFactories.asUnmodifiableMap();
         Assertions.assertEquals(1, plugins.size());
         Assertions.assertTrue(plugins.containsKey("123"));
-        Assertions.assertEquals(ThrowingPlugin.class.getName(), plugins.get("123").getClass().getName());
         Assertions
-                .assertEquals(DefaultPlugin.class.getName(), resourceIdToPluginMap.defaultPlugin().getClass().getName());
+                .assertEquals(ThrowingPluginFactory.class.getName(), plugins.get("123").pluginFactory().getClass().getName());
+        Assertions
+                .assertEquals(
+                        DefaultPluginFactory.class.getName(),
+                        mappedPluginFactories.defaultPluginFactoryWithConfig().pluginFactory().getClass().getName()
+                );
     }
 
     @Test
     void testWithNoPluginFactories() {
         final Map<String, PluginFactoryConfig> configs = new HashMap<>();
-        final ResourceIdToPluginMap resourceIdToPluginMap = new ResourceIdToPluginMap(
+        final MappedPluginFactories mappedPluginFactories = new MappedPluginFactories(
                 configs,
                 "com.teragrep.aer_02.plugin.DefaultPluginFactory",
                 "host",
@@ -92,16 +95,19 @@ public final class ResourceIdToPluginMapTest {
                 Logger.getAnonymousLogger()
         );
 
-        Map<String, Plugin> plugins = resourceIdToPluginMap.asUnmodifiableMap();
+        Map<String, WrappedPluginFactoryWithConfig> plugins = mappedPluginFactories.asUnmodifiableMap();
         Assertions.assertEquals(0, plugins.size());
         Assertions
-                .assertEquals(DefaultPlugin.class.getName(), resourceIdToPluginMap.defaultPlugin().getClass().getName());
+                .assertEquals(
+                        DefaultPluginFactory.class.getName(),
+                        mappedPluginFactories.defaultPluginFactoryWithConfig().pluginFactory().getClass().getName()
+                );
     }
 
     @Test
     void testEqualsContract() {
         EqualsVerifier
-                .forClass(ResourceIdToPluginMap.class)
+                .forClass(MappedPluginFactories.class)
                 .withPrefabValues(Logger.class, Logger.getAnonymousLogger(), Logger.getAnonymousLogger())
                 .withIgnoredFields("logger")
                 .verify();

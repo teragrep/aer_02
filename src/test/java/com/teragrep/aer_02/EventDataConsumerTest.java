@@ -49,8 +49,11 @@ import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;
 import com.teragrep.aer_02.fakes.OutputFake;
 import com.teragrep.aer_02.plugin.DefaultPluginFactory;
+import com.teragrep.aer_02.plugin.WrappedPluginFactoryWithConfig;
 import com.teragrep.akv_01.event.EventImpl;
 import com.teragrep.akv_01.event.ParsedEvent;
+import com.teragrep.akv_01.plugin.PluginFactoryConfigImpl;
+import jakarta.json.Json;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -83,7 +86,13 @@ public class EventDataConsumerTest {
                 Logger.getAnonymousLogger(),
                 new OutputFake(),
                 new HashMap<>(),
-                DefaultPluginFactory.class.getName(),
+                new WrappedPluginFactoryWithConfig(
+                        new DefaultPluginFactory(),
+                        new PluginFactoryConfigImpl(
+                                DefaultPluginFactory.class.getName(),
+                                Json.createObjectBuilder().add("realHostname", "real").add("syslogHostname", "host").add("syslogAppname", "app").build().toString()
+                        )
+                ),
                 metricRegistry
         );
 

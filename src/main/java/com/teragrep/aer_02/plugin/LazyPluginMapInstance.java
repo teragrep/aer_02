@@ -45,6 +45,8 @@
  */
 package com.teragrep.aer_02.plugin;
 
+import com.teragrep.aer_02.Hostname;
+import com.teragrep.aer_02.config.SyslogConfig;
 import com.teragrep.aer_02.config.source.EnvironmentSource;
 import com.teragrep.aer_02.config.source.Sourceable;
 import com.teragrep.akv_01.plugin.PluginFactoryConfig;
@@ -53,6 +55,7 @@ import com.teragrep.akv_01.plugin.PluginMap;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Map;
+import java.util.logging.Logger;
 
 /**
  * Uses Initialization on demand holder idiom. See
@@ -60,21 +63,34 @@ import java.util.Map;
  */
 public final class LazyPluginMapInstance {
 
-    private final Map<String, PluginFactoryConfig> pluginFactoryConfigs;
-    private final String defaultPluginFactoryClassName;
+    private final Map<String, WrappedPluginFactoryWithConfig> pluginFactories;
+    private final WrappedPluginFactoryWithConfig defaultPluginFactory;
 
     private LazyPluginMapInstance() {
+        final Logger logger = Logger.getAnonymousLogger();
         final Sourceable configSource = new EnvironmentSource();
+        final SyslogConfig syslogConfig = new SyslogConfig(configSource);
+        final String hostname = new Hostname("localhost").hostname();
         final PluginMap pluginMap;
         try {
             pluginMap = new PluginMap(new PluginConfiguration(configSource).asJson());
         }
-        catch (IOException e) {
+        catch (final IOException e) {
             throw new UncheckedIOException(e);
         }
 
-        pluginFactoryConfigs = pluginMap.asUnmodifiableMap();
-        defaultPluginFactoryClassName = pluginMap.defaultPluginFactoryClassName();
+        final Map<String, PluginFactoryConfig> pluginFactoryConfigs = pluginMap.asUnmodifiableMap();
+        final String defaultPluginFactoryClassName = pluginMap.defaultPluginFactoryClassName();
+        final MappedPluginFactories mappedPluginFactories = new MappedPluginFactories(
+                pluginFactoryConfigs,
+                defaultPluginFactoryClassName,
+                hostname,
+                syslogConfig,
+                logger
+        );
+
+        this.pluginFactories = mappedPluginFactories.asUnmodifiableMap();
+        this.defaultPluginFactory = mappedPluginFactories.defaultPluginFactoryWithConfig();
     }
 
     public static LazyPluginMapInstance lazySingletonInstance() {
@@ -88,11 +104,11 @@ public final class LazyPluginMapInstance {
         static final LazyPluginMapInstance INSTANCE = new LazyPluginMapInstance();
     }
 
-    public Map<String, PluginFactoryConfig> pluginFactoryConfigs() {
-        return pluginFactoryConfigs;
+    public Map<String, WrappedPluginFactoryWithConfig> pluginFactories() {
+        return pluginFactories;
     }
 
-    public String defaultPluginFactoryClassName() {
-        return defaultPluginFactoryClassName;
+    public WrappedPluginFactoryWithConfig defaultPluginFactory() {
+        return defaultPluginFactory;
     }
 }
