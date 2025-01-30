@@ -55,6 +55,6 @@ public final class ThrowingPlugin implements Plugin {
 
     @Override
     public List<SyslogMessage> syslogMessage(final ParsedEvent parsedEvent) {
-        throw new RuntimeException("test");
+        throw new RuntimeException("ThrowingPlugin example message");
     }
 }
