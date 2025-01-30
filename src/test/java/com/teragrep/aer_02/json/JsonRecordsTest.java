@@ -103,23 +103,6 @@ public class JsonRecordsTest {
     }
 
     @Test
-    void testEquals() {
-        final JsonStructure json = Json.createObjectBuilder().add("a", "b").add("c", "d").build();
-        JsonRecords jr = new JsonRecords(json);
-        JsonRecords jr2 = new JsonRecords(json);
-        Assertions.assertEquals(jr, jr2);
-    }
-
-    @Test
-    void testNotEquals() {
-        final JsonStructure json = Json.createObjectBuilder().add("a", "b").add("c", "d").build();
-        final JsonStructure json2 = Json.createObjectBuilder().add("e", "f").add("g", "h").build();
-        JsonRecords jr = new JsonRecords(json);
-        JsonRecords jr2 = new JsonRecords(json2);
-        Assertions.assertNotEquals(jr, jr2);
-    }
-
-    @Test
     void testEqualsContract() {
         EqualsVerifier.forClass(JsonRecords.class).verify();
     }
