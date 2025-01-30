@@ -45,6 +45,7 @@
  */
 package com.teragrep.aer_02.plugin;
 
+import com.teragrep.aer_02.SyslogBridge;
 import com.teragrep.akv_01.event.EventImpl;
 import com.teragrep.akv_01.plugin.Plugin;
 import com.teragrep.akv_01.plugin.PluginFactory;
@@ -89,5 +90,23 @@ public final class DefaultPluginFactoryTest {
         final Plugin plugin = Assertions
                 .assertDoesNotThrow(() -> pluginFactory.plugin(Json.createObjectBuilder().add("realHostname", "hostname").add("syslogHostname", "hostname").add("syslogAppname", "appname").build().toString()));
         Assertions.assertEquals(DefaultPlugin.class, plugin.getClass());
+    }
+
+    @Test
+    void testNonExistentClass() {
+        final PluginFactoryInitialization pluginFactoryInitialization = new PluginFactoryInitialization(
+                "notARealClassName"
+        );
+
+        Assertions.assertThrows(ClassNotFoundException.class, pluginFactoryInitialization::pluginFactory);
+    }
+
+    @Test
+    void testIncompatibleClass() {
+        final PluginFactoryInitialization pluginFactoryInitialization = new PluginFactoryInitialization(
+                SyslogBridge.class.getName()
+        );
+
+        Assertions.assertThrows(ClassCastException.class, pluginFactoryInitialization::pluginFactory);
     }
 }
