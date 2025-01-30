@@ -47,10 +47,12 @@ package com.teragrep.aer_02.plugin;
 
 import com.teragrep.aer_02.fakes.SourceableFake;
 import jakarta.json.JsonStructure;
+import jakarta.json.stream.JsonParsingException;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import java.io.FileNotFoundException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -89,6 +91,22 @@ public final class PluginConfigurationTest {
                 .assertEquals(
                         "com.teragrep.aer_02.plugin.DefaultPluginFactory", js.asJsonObject().getJsonArray("resourceIds").getJsonObject(0).getString("pluginFactoryClass")
                 );
+    }
+
+    @Test
+    void testMissingConfig() {
+        Map<String, String> config = new HashMap<>();
+        config.put("plugins.config.path", "src/test/resources/missing_config.json");
+        PluginConfiguration pluginCfg = new PluginConfiguration(new SourceableFake(config));
+        Assertions.assertThrows(FileNotFoundException.class, pluginCfg::asJson);
+    }
+
+    @Test
+    void testInvalidSyntaxConfig() {
+        Map<String, String> config = new HashMap<>();
+        config.put("plugins.config.path", "src/test/resources/invalid_syntax_config.json");
+        PluginConfiguration pluginCfg = new PluginConfiguration(new SourceableFake(config));
+        Assertions.assertThrows(JsonParsingException.class, pluginCfg::asJson);
     }
 
     @Test
