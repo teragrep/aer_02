@@ -46,6 +46,7 @@
 package com.teragrep.aer_02.json;
 
 import jakarta.json.JsonStructure;
+import jakarta.json.JsonObject;
 import jakarta.json.JsonArray;
 import jakarta.json.JsonValue;
 import jakarta.json.JsonException;
@@ -67,19 +68,22 @@ public final class JsonRecords {
      * @return individual records as an array or the original event.
      */
     public List<String> records() throws JsonException {
-        if (json == null || !json.getValueType().equals(JsonValue.ValueType.OBJECT)) {
+        if (!json.getValueType().equals(JsonValue.ValueType.OBJECT)) {
             // if top-level structure is not object or doesn't exist
             throw new JsonException("Main structure does not exist or it is not a JSON object");
         }
 
-        final JsonValue recordsStructure = json.asJsonObject().get("records");
+        final JsonObject mainObject = json.asJsonObject();
 
-        if (recordsStructure == null || !recordsStructure.getValueType().equals(JsonValue.ValueType.ARRAY)) {
+        if (
+            !mainObject.containsKey("records")
+                    || !mainObject.get("records").getValueType().equals(JsonValue.ValueType.ARRAY)
+        ) {
             // if "records" is not an array type or doesn't exist
             throw new JsonException("Main object does not contain an array with the key 'records'");
         }
 
-        final JsonArray recordsArray = recordsStructure.asJsonArray();
+        final JsonArray recordsArray = mainObject.get("records").asJsonArray();
         // Take string representation of inner value regardless of actual datatype
         return recordsArray.getValuesAs(JsonValue::toString);
     }
