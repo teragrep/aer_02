@@ -45,6 +45,7 @@
  */
 package com.teragrep.aer_02.plugin;
 
+import com.teragrep.aer_02.SyslogBridge;
 import com.teragrep.aer_02.config.SyslogConfig;
 import com.teragrep.aer_02.fakes.ThrowingPluginFactory;
 import com.teragrep.akv_01.plugin.PluginFactoryConfig;
@@ -105,7 +106,7 @@ public final class MappedPluginFactoriesTest {
     }
 
     @Test
-    void testWithInvalidPluginFactory() {
+    void testWithMissingPluginFactory() {
         final Map<String, PluginFactoryConfig> configs = new HashMap<>();
         configs.put("123", new PluginFactoryConfigImpl("invalid", "path"));
         final MappedPluginFactories mappedPluginFactories = new MappedPluginFactories(
@@ -118,6 +119,22 @@ public final class MappedPluginFactoriesTest {
 
         Assertions.assertThrows(IllegalStateException.class, mappedPluginFactories::asUnmodifiableMap);
         Assertions.assertThrows(IllegalStateException.class, mappedPluginFactories::defaultPluginFactoryWithConfig);
+    }
+
+    @Test
+    void testWithInvalidPluginFactory() {
+        final Map<String, PluginFactoryConfig> configs = new HashMap<>();
+        configs.put("123", new PluginFactoryConfigImpl(SyslogBridge.class.getName(), "path"));
+        final MappedPluginFactories mappedPluginFactories = new MappedPluginFactories(
+                configs,
+                SyslogBridge.class.getName(),
+                "host",
+                new SyslogConfig("app", "host"),
+                Logger.getAnonymousLogger()
+        );
+
+        Assertions.assertThrows(ClassCastException.class, mappedPluginFactories::asUnmodifiableMap);
+        Assertions.assertThrows(ClassCastException.class, mappedPluginFactories::defaultPluginFactoryWithConfig);
     }
 
     @Test
