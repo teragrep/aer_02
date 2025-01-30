@@ -68,7 +68,7 @@ public final class PluginConfiguration {
         if (configPath.isEmpty()) {
             return Json
                     .createObjectBuilder()
-                    .add("defaultPluginFactoryClass", "com.teragrep.aer_02.plugin.DefaultPluginFactory")
+                    .add("defaultPluginFactoryClass", DefaultPluginFactory.class.getName())
                     .add("resourceIds", JsonValue.EMPTY_JSON_ARRAY)
                     .build();
         }
