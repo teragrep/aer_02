@@ -113,7 +113,7 @@ public class SyslogBridge {
         try {
             if (context.getLogger().isLoggable(Level.FINE)) {
                 context.getLogger().fine("eventHubTriggerToSyslog triggered");
-                context.getLogger().fine("Got events: " + events.length);
+                context.getLogger().fine("Got events: <[" + events.length + "]>");
             }
             final LazyInstance lazyInstance = LazyInstance.lazySingletonInstance();
             final LazyPluginMapInstance lazyPluginMapInstance = LazyPluginMapInstance.lazySingletonInstance();
@@ -144,7 +144,7 @@ public class SyslogBridge {
         }
         catch (Throwable t) {
             if (context.getLogger().isLoggable(Level.SEVERE)) {
-                context.getLogger().severe("exiting because caught Throwable: " + t);
+                context.getLogger().severe("Exiting because unexpected throwable was caught: <" + t + ">");
             }
             System.exit(1);
         }
