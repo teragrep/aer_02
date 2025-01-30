@@ -50,8 +50,8 @@ import com.codahale.metrics.MetricRegistry;
 import com.teragrep.aer_02.plugin.WrappedPluginFactoryWithConfig;
 import com.teragrep.akv_01.event.ParsedEvent;
 import com.teragrep.rlo_14.SDElement;
+import com.teragrep.rlo_14.SDParam;
 import com.teragrep.rlo_14.SyslogMessage;
-import com.teragrep.rlo_14.*;
 import com.teragrep.akv_01.plugin.*;
 import jakarta.json.JsonException;
 
