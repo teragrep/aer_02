@@ -47,23 +47,29 @@ package com.teragrep.aer_02;
 
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;
-import com.teragrep.aer_02.config.source.PropertySource;
-import com.teragrep.aer_02.config.source.Sourceable;
 import com.teragrep.aer_02.fakes.OutputFake;
+import com.teragrep.aer_02.plugin.DefaultPluginFactory;
+import com.teragrep.aer_02.plugin.WrappedPluginFactoryWithConfig;
+import com.teragrep.akv_01.event.EventImpl;
+import com.teragrep.akv_01.event.ParsedEvent;
+import com.teragrep.akv_01.plugin.PluginFactoryConfigImpl;
+import jakarta.json.Json;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 
-import java.time.ZonedDateTime;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.logging.Logger;
 
 import static com.codahale.metrics.MetricRegistry.name;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class EventDataConsumerTest {
-
-    private final Sourceable configSource = new PropertySource();
 
     @Test
     public void testLatencyMetric() {
@@ -77,26 +83,36 @@ public class EventDataConsumerTest {
         systemProps.put("SequenceNumber", "1");
         MetricRegistry metricRegistry = new MetricRegistry();
         EventDataConsumer eventDataConsumer = new EventDataConsumer(
-                configSource,
+                Logger.getAnonymousLogger(),
                 new OutputFake(),
-                new Hostname("localhost").hostname(),
+                new HashMap<>(),
+                new WrappedPluginFactoryWithConfig(
+                        new DefaultPluginFactory(),
+                        new PluginFactoryConfigImpl(
+                                DefaultPluginFactory.class.getName(),
+                                Json.createObjectBuilder().add("realHostname", "real").add("syslogHostname", "host").add("syslogAppname", "app").build().toString()
+                        )
+                ),
                 metricRegistry
         );
 
         final double records = 10;
+        List<ParsedEvent> parsedEvents = new ArrayList<>();
         for (int i = 0; i < records; i++) {
             if (i >= 5) {
                 partitionContext.put("PartitionId", "1");
             }
-            eventDataConsumer
-                    .accept("event", partitionContext, ZonedDateTime.now().minusSeconds(10), String.valueOf(i), props, systemProps);
+            String enqueuedTime = LocalDateTime.now(ZoneId.of("Z")).minusSeconds(10).toString();
+            parsedEvents
+                    .add(new EventImpl("event", new HashMap<>(partitionContext), props, systemProps, enqueuedTime, String.valueOf(i)).parsedEvent());
         }
+        eventDataConsumer.accept(parsedEvents);
 
         // 5 records for each partition
         Gauge<Long> gauge1 = metricRegistry.gauge(name(EventDataConsumer.class, "latency-seconds", "0"));
         Gauge<Long> gauge2 = metricRegistry.gauge(name(EventDataConsumer.class, "latency-seconds", "1"));
 
-        Assertions.assertEquals(gauge1.getValue(), 10);
-        Assertions.assertEquals(gauge2.getValue(), 10);
+        Assertions.assertEquals(10, gauge1.getValue());
+        Assertions.assertEquals(10, gauge2.getValue());
     }
 }

@@ -46,8 +46,14 @@
     <revision>0.0.1</revision>
     <sha1></sha1>
   </properties>
-  <!-- Azure functions -->
   <dependencies>
+    <!-- akv_01 -->
+    <dependency>
+      <groupId>com.teragrep</groupId>
+      <artifactId>akv_01</artifactId>
+      <version>3.0.0</version>
+    </dependency>
+    <!-- Azure functions -->
     <dependency>
       <groupId>com.azure</groupId>
       <artifactId>azure-messaging-eventhubs</artifactId>

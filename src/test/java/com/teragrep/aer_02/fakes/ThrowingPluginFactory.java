@@ -43,67 +43,15 @@
  * Teragrep, the applicable Commercial License may apply to this file if you as
  * a licensee so wish it.
  */
-package com.teragrep.aer_02.json;
+package com.teragrep.aer_02.fakes;
 
-import jakarta.json.JsonStructure;
-import jakarta.json.JsonObject;
-import jakarta.json.JsonArray;
-import jakarta.json.JsonValue;
-import jakarta.json.JsonException;
+import com.teragrep.akv_01.plugin.Plugin;
+import com.teragrep.akv_01.plugin.PluginFactory;
 
-import java.util.List;
-import java.util.Objects;
-
-public final class JsonRecords {
-
-    private final JsonStructure json;
-
-    public JsonRecords(final JsonStructure json) {
-        this.json = json;
-    }
-
-    /**
-     * Expects <code>{"records":[{},{}, ..., {}]}</code> type JSON string.
-     * 
-     * @return individual records as an array or the original event.
-     */
-    public List<String> records() throws JsonException {
-        if (!json.getValueType().equals(JsonValue.ValueType.OBJECT)) {
-            // if top-level structure is not object or doesn't exist
-            throw new JsonException("Main structure does not exist or it is not a JSON object");
-        }
-
-        final JsonObject mainObject = json.asJsonObject();
-
-        if (
-            !mainObject.containsKey("records")
-                    || !mainObject.get("records").getValueType().equals(JsonValue.ValueType.ARRAY)
-        ) {
-            // if "records" is not an array type or doesn't exist
-            throw new JsonException("Main object does not contain an array with the key 'records'");
-        }
-
-        final JsonArray recordsArray = mainObject.get("records").asJsonArray();
-        // Take string representation of inner value regardless of actual datatype
-        return recordsArray.getValuesAs(JsonValue::toString);
-    }
+public final class ThrowingPluginFactory implements PluginFactory {
 
     @Override
-    public boolean equals(final Object o) {
-        if (this == o) {
-            return true;
-        }
-
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-
-        final JsonRecords that = (JsonRecords) o;
-        return Objects.equals(json, that.json);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hashCode(json);
+    public Plugin plugin(String s) {
+        return new ThrowingPlugin();
     }
 }

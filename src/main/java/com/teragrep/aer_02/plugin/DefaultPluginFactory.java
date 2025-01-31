@@ -43,67 +43,30 @@
  * Teragrep, the applicable Commercial License may apply to this file if you as
  * a licensee so wish it.
  */
-package com.teragrep.aer_02.json;
+package com.teragrep.aer_02.plugin;
 
-import jakarta.json.JsonStructure;
+import com.teragrep.akv_01.plugin.Plugin;
+import com.teragrep.akv_01.plugin.PluginFactory;
+import jakarta.json.Json;
 import jakarta.json.JsonObject;
-import jakarta.json.JsonArray;
-import jakarta.json.JsonValue;
-import jakarta.json.JsonException;
+import jakarta.json.JsonReader;
 
-import java.util.List;
-import java.util.Objects;
+import java.io.StringReader;
 
-public final class JsonRecords {
+public final class DefaultPluginFactory implements PluginFactory {
 
-    private final JsonStructure json;
-
-    public JsonRecords(final JsonStructure json) {
-        this.json = json;
-    }
-
-    /**
-     * Expects <code>{"records":[{},{}, ..., {}]}</code> type JSON string.
-     * 
-     * @return individual records as an array or the original event.
-     */
-    public List<String> records() throws JsonException {
-        if (!json.getValueType().equals(JsonValue.ValueType.OBJECT)) {
-            // if top-level structure is not object or doesn't exist
-            throw new JsonException("Main structure does not exist or it is not a JSON object");
-        }
-
-        final JsonObject mainObject = json.asJsonObject();
-
-        if (
-            !mainObject.containsKey("records")
-                    || !mainObject.get("records").getValueType().equals(JsonValue.ValueType.ARRAY)
+    @Override
+    public synchronized Plugin plugin(final String json) {
+        final JsonObject jsonObject;
+        try (
+                final StringReader stringReader = new StringReader(json); final JsonReader reader = Json.createReader(stringReader)
         ) {
-            // if "records" is not an array type or doesn't exist
-            throw new JsonException("Main object does not contain an array with the key 'records'");
+            jsonObject = reader.readObject();
         }
-
-        final JsonArray recordsArray = mainObject.get("records").asJsonArray();
-        // Take string representation of inner value regardless of actual datatype
-        return recordsArray.getValuesAs(JsonValue::toString);
-    }
-
-    @Override
-    public boolean equals(final Object o) {
-        if (this == o) {
-            return true;
-        }
-
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-
-        final JsonRecords that = (JsonRecords) o;
-        return Objects.equals(json, that.json);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hashCode(json);
+        return new DefaultPlugin(
+                jsonObject.getString("realHostname"),
+                jsonObject.getString("syslogHostname"),
+                jsonObject.getString("syslogAppname")
+        );
     }
 }

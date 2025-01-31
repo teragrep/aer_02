@@ -43,67 +43,50 @@
  * Teragrep, the applicable Commercial License may apply to this file if you as
  * a licensee so wish it.
  */
-package com.teragrep.aer_02.json;
+package com.teragrep.aer_02.plugin;
 
+import com.teragrep.aer_02.config.source.Sourceable;
+import com.teragrep.akv_01.json.JsonFile;
+import jakarta.json.Json;
 import jakarta.json.JsonStructure;
-import jakarta.json.JsonObject;
-import jakarta.json.JsonArray;
 import jakarta.json.JsonValue;
-import jakarta.json.JsonException;
 
-import java.util.List;
+import java.io.IOException;
 import java.util.Objects;
 
-public final class JsonRecords {
+public final class PluginConfiguration {
 
-    private final JsonStructure json;
+    private final Sourceable configSource;
 
-    public JsonRecords(final JsonStructure json) {
-        this.json = json;
+    public PluginConfiguration(final Sourceable configSource) {
+        this.configSource = configSource;
     }
 
-    /**
-     * Expects <code>{"records":[{},{}, ..., {}]}</code> type JSON string.
-     * 
-     * @return individual records as an array or the original event.
-     */
-    public List<String> records() throws JsonException {
-        if (!json.getValueType().equals(JsonValue.ValueType.OBJECT)) {
-            // if top-level structure is not object or doesn't exist
-            throw new JsonException("Main structure does not exist or it is not a JSON object");
+    public JsonStructure asJson() throws IOException {
+        final String configPath = configSource.source("plugins.config.path", "");
+
+        if (configPath.isEmpty()) {
+            return Json
+                    .createObjectBuilder()
+                    .add("defaultPluginFactoryClass", DefaultPluginFactory.class.getName())
+                    .add("resourceIds", JsonValue.EMPTY_JSON_ARRAY)
+                    .build();
         }
 
-        final JsonObject mainObject = json.asJsonObject();
-
-        if (
-            !mainObject.containsKey("records")
-                    || !mainObject.get("records").getValueType().equals(JsonValue.ValueType.ARRAY)
-        ) {
-            // if "records" is not an array type or doesn't exist
-            throw new JsonException("Main object does not contain an array with the key 'records'");
-        }
-
-        final JsonArray recordsArray = mainObject.get("records").asJsonArray();
-        // Take string representation of inner value regardless of actual datatype
-        return recordsArray.getValuesAs(JsonValue::toString);
+        return new JsonFile(configPath).asJsonStructure();
     }
 
     @Override
-    public boolean equals(final Object o) {
-        if (this == o) {
-            return true;
-        }
-
+    public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-
-        final JsonRecords that = (JsonRecords) o;
-        return Objects.equals(json, that.json);
+        PluginConfiguration that = (PluginConfiguration) o;
+        return Objects.equals(configSource, that.configSource);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hashCode(json);
+        return Objects.hashCode(configSource);
     }
 }

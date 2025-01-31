@@ -43,67 +43,48 @@
  * Teragrep, the applicable Commercial License may apply to this file if you as
  * a licensee so wish it.
  */
-package com.teragrep.aer_02.json;
+package com.teragrep.aer_02.plugin;
 
-import jakarta.json.Json;
-import jakarta.json.JsonException;
-import jakarta.json.JsonStructure;
+import com.teragrep.akv_01.event.EventImpl;
+import com.teragrep.rlo_14.SyslogMessage;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import java.time.ZonedDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
-public class JsonRecordsTest {
-
-    @Test
-    void testJsonArrayCase() {
-        final JsonStructure records = Json.createArrayBuilder().add(0, 1).add(1, 2).build();
-        JsonRecords jr = new JsonRecords(records);
-        Assertions.assertThrows(JsonException.class, () -> jr.records());
-    }
+public final class DefaultPluginTest {
 
     @Test
-    void testEmptyJsonObjectCase() {
-        final JsonStructure records = Json.createObjectBuilder().build();
-        JsonRecords jr = new JsonRecords(records);
-        Assertions.assertThrows(JsonException.class, () -> jr.records());
-    }
+    void testDefaultPluginCreateSyslogMessage() {
+        final Map<String, Object> partitionContext = new HashMap<>();
+        partitionContext.put("FullyQualifiedNamespace", "eventhub.123");
+        partitionContext.put("EventHubName", "test1");
+        partitionContext.put("ConsumerGroup", "$Default");
+        partitionContext.put("PartitionId", "0");
+        final Map<String, Object> props = new HashMap<>();
+        final Map<String, Object> systemProps = new HashMap<>();
+        systemProps.put("SequenceNumber", "1");
+        final String enqueuedTime = "2025-01-01T01:01:01";
 
-    @Test
-    void testOtherJsonObjectCase() {
-        final JsonStructure records = Json.createObjectBuilder().add("k1", "v1").add("k2", "v2").build();
-        JsonRecords jr = new JsonRecords(records);
-        Assertions.assertThrows(JsonException.class, () -> jr.records());
-    }
+        final DefaultPlugin defaultPlugin = new DefaultPlugin("realHostname", "syslogHostname", "syslogAppname");
+        final List<SyslogMessage> msg = defaultPlugin
+                .syslogMessage(new EventImpl("event", partitionContext, props, systemProps, enqueuedTime, "0").parsedEvent());
 
-    @Test
-    void testRecordsAsObjectsCase() {
-        final JsonStructure records = Json
-                .createObjectBuilder()
-                .add("records", Json.createArrayBuilder().add(Json.createObjectBuilder().add("a", "b")).add(Json.createObjectBuilder().add("c", "d"))).build();
-        JsonRecords jr = new JsonRecords(records);
-        final List<String> result = jr.records();
-        Assertions.assertEquals(2, result.size());
-        Assertions.assertEquals("{\"a\":\"b\"}", result.get(0));
-        Assertions.assertEquals("{\"c\":\"d\"}", result.get(1));
-    }
-
-    @Test
-    void testRecordsAsStringsAndNumbersCase() {
-        final JsonStructure records = Json
-                .createObjectBuilder()
-                .add("records", Json.createArrayBuilder().add("abc").add(123).build())
-                .build();
-        JsonRecords jr = new JsonRecords(records);
-        final List<String> result = jr.records();
-        Assertions.assertEquals(2, result.size());
-        Assertions.assertEquals("\"abc\"", result.get(0));
-        Assertions.assertEquals("123", result.get(1));
+        Assertions.assertEquals("event", msg.get(0).getMsg());
+        // aer_02@48577; aer_02_event@48577; aer_02_partition@48577; event_id@48577
+        Assertions.assertEquals(4, msg.get(0).getSDElements().size());
+        Assertions.assertEquals("syslogHostname", msg.get(0).getHostname());
+        Assertions.assertEquals("syslogAppname", msg.get(0).getAppName());
+        Assertions
+                .assertEquals(ZonedDateTime.parse(enqueuedTime + "Z").toInstant().toString(), msg.get(0).getTimestamp());
     }
 
     @Test
     void testEqualsContract() {
-        EqualsVerifier.forClass(JsonRecords.class).verify();
+        EqualsVerifier.forClass(DefaultPlugin.class).verify();
     }
 }

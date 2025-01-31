@@ -47,99 +47,96 @@ package com.teragrep.aer_02;
 
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;
-import com.teragrep.aer_02.config.SyslogConfig;
-import com.teragrep.aer_02.config.source.Sourceable;
-import com.teragrep.rlo_14.Facility;
+import com.teragrep.aer_02.plugin.WrappedPluginFactoryWithConfig;
+import com.teragrep.akv_01.event.ParsedEvent;
 import com.teragrep.rlo_14.SDElement;
-import com.teragrep.rlo_14.Severity;
+import com.teragrep.rlo_14.SDParam;
 import com.teragrep.rlo_14.SyslogMessage;
+import com.teragrep.akv_01.plugin.*;
+import jakarta.json.JsonException;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
-import java.time.ZonedDateTime;
+import java.util.List;
 import java.util.Map;
-import java.util.UUID;
+import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 import static com.codahale.metrics.MetricRegistry.name;
 
 final class EventDataConsumer {
 
     // Note: Checkpointing is handled automatically.
+    private final Logger logger;
     private final Output output;
-    private final String realHostName;
-    private final SyslogConfig syslogConfig;
+    private final Map<String, WrappedPluginFactoryWithConfig> pluginFactories;
     private final MetricRegistry metricRegistry;
+    private final WrappedPluginFactoryWithConfig defaultPluginFactory;
 
     EventDataConsumer(
-            final Sourceable configSource,
+            final Logger logger,
             final Output output,
-            final String hostname,
+            final Map<String, WrappedPluginFactoryWithConfig> pluginFactories,
+            final WrappedPluginFactoryWithConfig defaultPluginFactory,
             final MetricRegistry metricRegistry
     ) {
+        this.logger = logger;
         this.metricRegistry = metricRegistry;
+        this.pluginFactories = pluginFactories;
+        this.defaultPluginFactory = defaultPluginFactory;
         this.output = output;
-        this.realHostName = hostname;
-        this.syslogConfig = new SyslogConfig(configSource);
     }
 
-    public void accept(
-            String eventData,
-            Map<String, Object> partitionContext,
-            ZonedDateTime enqueuedTime,
-            String offset,
-            Map<String, Object> props,
-            Map<String, Object> systemProps
-    ) {
-
-        String partitionId = String.valueOf(partitionContext.get("PartitionId"));
-        metricRegistry.gauge(name(EventDataConsumer.class, "latency-seconds", partitionId), () -> new Gauge<Long>() {
-
-            @Override
-            public Long getValue() {
-                return Instant.now().getEpochSecond() - enqueuedTime.toInstant().getEpochSecond();
+    public void accept(final List<ParsedEvent> parsedEvents) {
+        for (final ParsedEvent parsedEvent : parsedEvents) {
+            WrappedPluginFactoryWithConfig pluginFactoryWithConfig;
+            if (parsedEvent.isJsonStructure()) {
+                try {
+                    final String resourceId = parsedEvent.resourceId();
+                    pluginFactoryWithConfig = pluginFactories.getOrDefault(resourceId, defaultPluginFactory);
+                }
+                catch (final JsonException ignored) {
+                    // no resourceId in json
+                    pluginFactoryWithConfig = defaultPluginFactory;
+                }
             }
-        });
+            else {
+                // non-json event
+                pluginFactoryWithConfig = defaultPluginFactory;
+            }
+            final Plugin plugin = pluginFactoryWithConfig
+                    .pluginFactory()
+                    .plugin(pluginFactoryWithConfig.pluginFactoryConfig().configPath());
 
-        SDElement sdId = new SDElement("event_id@48577")
-                .addSDParam("uuid", UUID.randomUUID().toString())
-                .addSDParam("hostname", realHostName)
-                .addSDParam("unixtime", Instant.now().toString())
-                .addSDParam("id_source", "aer_02");
+            final List<SyslogMessage> syslogMessages = plugin.syslogMessage(parsedEvent);
+            syslogMessages.forEach(this::sendToOutput);
+        }
+    }
 
-        SDElement sdPartition = new SDElement("aer_02_partition@48577")
-                .addSDParam(
-                        "fully_qualified_namespace",
-                        String.valueOf(partitionContext.getOrDefault("FullyQualifiedNamespace", ""))
-                )
-                .addSDParam("eventhub_name", String.valueOf(partitionContext.getOrDefault("EventHubName", "")))
-                .addSDParam("partition_id", String.valueOf(partitionContext.getOrDefault("PartitionId", "")))
-                .addSDParam("consumer_group", String.valueOf(partitionContext.getOrDefault("ConsumerGroup", "")));
+    private void sendToOutput(final SyslogMessage syslogMessage) {
+        final List<SDElement> partitionElements = syslogMessage
+                .getSDElements()
+                .stream()
+                .filter(sdElement -> sdElement.getSdID().equals("aer_02_partition@48577"))
+                .collect(Collectors.toList());
+        if (partitionElements.isEmpty()) {
+            throw new IllegalStateException("SDElement aer_02_partition@48577 not found");
+        }
 
-        String partitionKey = String.valueOf(systemProps.getOrDefault("PartitionKey", ""));
+        final List<SDParam> partitionParams = partitionElements
+                .get(0)
+                .getSdParams()
+                .stream()
+                .filter(sdParam -> sdParam.getParamName().equals("partition_id"))
+                .collect(Collectors.toList());
+        if (partitionParams.isEmpty()) {
+            throw new IllegalStateException("SDParam partition_id not found in SDElement aer_02_partition@48577");
+        }
 
-        SDElement sdEvent = new SDElement("aer_02_event@48577")
-                .addSDParam("offset", offset == null ? "" : offset)
-                .addSDParam("enqueued_time", enqueuedTime == null ? "" : enqueuedTime.toString())
-                .addSDParam("partition_key", partitionKey == null ? "" : partitionKey);
-        props.forEach((key, value) -> sdEvent.addSDParam("property_" + key, value.toString()));
+        final long timestampSecs = Instant.parse(syslogMessage.getTimestamp()).toEpochMilli() / 1000L;
 
-        SDElement sdComponentInfo = new SDElement("aer_02@48577")
-                .addSDParam("timestamp_source", enqueuedTime == null ? "generated" : "timeEnqueued");
-
-        SyslogMessage syslogMessage = new SyslogMessage()
-                .withSeverity(Severity.INFORMATIONAL)
-                .withFacility(Facility.LOCAL0)
-                .withTimestamp(
-                        enqueuedTime == null ? Instant.now().toEpochMilli() : enqueuedTime.toInstant().toEpochMilli()
-                )
-                .withHostname(syslogConfig.hostName())
-                .withAppName(syslogConfig.appName())
-                .withSDElement(sdId)
-                .withSDElement(sdPartition)
-                .withSDElement(sdEvent)
-                .withSDElement(sdComponentInfo)
-                .withMsgId(String.valueOf(systemProps.getOrDefault("SequenceNumber", "0")))
-                .withMsg(eventData);
+        metricRegistry
+                .gauge(name(EventDataConsumer.class, "latency-seconds", partitionParams.get(0).getParamValue()), () -> (Gauge<Long>) () -> Instant.now().getEpochSecond() - timestampSecs);
 
         output.accept(syslogMessage.toRfc5424SyslogMessage().getBytes(StandardCharsets.UTF_8));
     }
