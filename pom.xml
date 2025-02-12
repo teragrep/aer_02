@@ -47,11 +47,16 @@
     <sha1></sha1>
   </properties>
   <dependencies>
-    <!-- akv_01 -->
+    <!-- Plugin functionality -->
+    <dependency>
+      <groupId>com.teragrep</groupId>
+      <artifactId>nlf_01</artifactId>
+      <version>2.0.0</version>
+    </dependency>
     <dependency>
       <groupId>com.teragrep</groupId>
       <artifactId>akv_01</artifactId>
-      <version>3.0.0</version>
+      <version>6.0.0</version>
     </dependency>
     <!-- Azure functions -->
     <dependency>

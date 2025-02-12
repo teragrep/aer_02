@@ -50,6 +50,7 @@ import com.teragrep.aer_02.config.SyslogConfig;
 import com.teragrep.aer_02.fakes.ThrowingPluginFactory;
 import com.teragrep.akv_01.plugin.PluginFactoryConfig;
 import com.teragrep.akv_01.plugin.PluginFactoryConfigImpl;
+import com.teragrep.nlf_01.NLFPluginFactory;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -67,7 +68,8 @@ public final class MappedPluginFactoriesTest {
 
         final MappedPluginFactories mappedPluginFactories = new MappedPluginFactories(
                 configs,
-                "com.teragrep.aer_02.plugin.DefaultPluginFactory",
+                NLFPluginFactory.class.getName(),
+                DefaultPluginFactory.class.getName(),
                 "host",
                 new SyslogConfig("app", "host"),
                 Logger.getAnonymousLogger()
@@ -80,8 +82,14 @@ public final class MappedPluginFactoriesTest {
                 .assertEquals(ThrowingPluginFactory.class.getName(), plugins.get("123").pluginFactory().getClass().getName());
         Assertions
                 .assertEquals(
-                        DefaultPluginFactory.class.getName(),
+                        NLFPluginFactory.class.getName(),
                         mappedPluginFactories.defaultPluginFactoryWithConfig().pluginFactory().getClass().getName()
+                );
+
+        Assertions
+                .assertEquals(
+                        DefaultPluginFactory.class.getName(),
+                        mappedPluginFactories.exceptionPluginFactoryWithConfig().pluginFactory().getClass().getName()
                 );
     }
 
@@ -90,7 +98,8 @@ public final class MappedPluginFactoriesTest {
         final Map<String, PluginFactoryConfig> configs = new HashMap<>();
         final MappedPluginFactories mappedPluginFactories = new MappedPluginFactories(
                 configs,
-                "com.teragrep.aer_02.plugin.DefaultPluginFactory",
+                NLFPluginFactory.class.getName(),
+                DefaultPluginFactory.class.getName(),
                 "host",
                 new SyslogConfig("app", "host"),
                 Logger.getAnonymousLogger()
@@ -100,8 +109,14 @@ public final class MappedPluginFactoriesTest {
         Assertions.assertEquals(0, plugins.size());
         Assertions
                 .assertEquals(
-                        DefaultPluginFactory.class.getName(),
+                        NLFPluginFactory.class.getName(),
                         mappedPluginFactories.defaultPluginFactoryWithConfig().pluginFactory().getClass().getName()
+                );
+
+        Assertions
+                .assertEquals(
+                        DefaultPluginFactory.class.getName(),
+                        mappedPluginFactories.exceptionPluginFactoryWithConfig().pluginFactory().getClass().getName()
                 );
     }
 
@@ -112,6 +127,7 @@ public final class MappedPluginFactoriesTest {
         final MappedPluginFactories mappedPluginFactories = new MappedPluginFactories(
                 configs,
                 "invalid",
+                "invalid2",
                 "host",
                 new SyslogConfig("app", "host"),
                 Logger.getAnonymousLogger()
@@ -119,6 +135,7 @@ public final class MappedPluginFactoriesTest {
 
         Assertions.assertThrows(IllegalStateException.class, mappedPluginFactories::asUnmodifiableMap);
         Assertions.assertThrows(IllegalStateException.class, mappedPluginFactories::defaultPluginFactoryWithConfig);
+        Assertions.assertThrows(IllegalStateException.class, mappedPluginFactories::exceptionPluginFactoryWithConfig);
     }
 
     @Test
@@ -128,6 +145,7 @@ public final class MappedPluginFactoriesTest {
         final MappedPluginFactories mappedPluginFactories = new MappedPluginFactories(
                 configs,
                 SyslogBridge.class.getName(),
+                SyslogBridge.class.getName(),
                 "host",
                 new SyslogConfig("app", "host"),
                 Logger.getAnonymousLogger()
@@ -135,6 +153,7 @@ public final class MappedPluginFactoriesTest {
 
         Assertions.assertThrows(ClassCastException.class, mappedPluginFactories::asUnmodifiableMap);
         Assertions.assertThrows(ClassCastException.class, mappedPluginFactories::defaultPluginFactoryWithConfig);
+        Assertions.assertThrows(ClassCastException.class, mappedPluginFactories::exceptionPluginFactoryWithConfig);
     }
 
     @Test

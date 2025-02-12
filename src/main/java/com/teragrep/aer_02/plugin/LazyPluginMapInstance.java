@@ -65,6 +65,7 @@ public final class LazyPluginMapInstance {
 
     private final Map<String, WrappedPluginFactoryWithConfig> pluginFactories;
     private final WrappedPluginFactoryWithConfig defaultPluginFactory;
+    private final WrappedPluginFactoryWithConfig exceptionPluginFactory;
 
     private LazyPluginMapInstance() {
         final Logger logger = Logger.getAnonymousLogger();
@@ -81,9 +82,11 @@ public final class LazyPluginMapInstance {
 
         final Map<String, PluginFactoryConfig> pluginFactoryConfigs = pluginMap.asUnmodifiableMap();
         final String defaultPluginFactoryClassName = pluginMap.defaultPluginFactoryClassName();
+        final String exceptionPluginFactoryClassName = pluginMap.exceptionPluginFactoryClassName();
         final MappedPluginFactories mappedPluginFactories = new MappedPluginFactories(
                 pluginFactoryConfigs,
                 defaultPluginFactoryClassName,
+                exceptionPluginFactoryClassName,
                 hostname,
                 syslogConfig,
                 logger
@@ -91,6 +94,7 @@ public final class LazyPluginMapInstance {
 
         this.pluginFactories = mappedPluginFactories.asUnmodifiableMap();
         this.defaultPluginFactory = mappedPluginFactories.defaultPluginFactoryWithConfig();
+        this.exceptionPluginFactory = mappedPluginFactories.exceptionPluginFactoryWithConfig();
     }
 
     public static LazyPluginMapInstance lazySingletonInstance() {
@@ -110,5 +114,9 @@ public final class LazyPluginMapInstance {
 
     public WrappedPluginFactoryWithConfig defaultPluginFactory() {
         return defaultPluginFactory;
+    }
+
+    public WrappedPluginFactoryWithConfig exceptionPluginFactory() {
+        return exceptionPluginFactory;
     }
 }

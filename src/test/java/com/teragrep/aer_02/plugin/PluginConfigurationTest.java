@@ -46,6 +46,7 @@
 package com.teragrep.aer_02.plugin;
 
 import com.teragrep.aer_02.fakes.SourceableFake;
+import com.teragrep.nlf_01.NLFPluginFactory;
 import jakarta.json.JsonStructure;
 import jakarta.json.stream.JsonParsingException;
 import nl.jqno.equalsverifier.EqualsVerifier;
@@ -65,10 +66,7 @@ public final class PluginConfigurationTest {
 
         // Should default to com.teragrep.aer_02.plugin.DefaultPluginFactory
         Assertions
-                .assertEquals(
-                        "com.teragrep.aer_02.plugin.DefaultPluginFactory",
-                        js.asJsonObject().getString("defaultPluginFactoryClass")
-                );
+                .assertEquals(NLFPluginFactory.class.getName(), js.asJsonObject().getString("defaultPluginFactoryClass"));
     }
 
     @Test

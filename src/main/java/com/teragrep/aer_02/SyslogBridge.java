@@ -121,12 +121,15 @@ public class SyslogBridge {
             final DefaultOutput defaultOutput = lazyInstance.defaultOutput();
             final Map<String, WrappedPluginFactoryWithConfig> pluginFactories = lazyPluginMapInstance.pluginFactories();
             final WrappedPluginFactoryWithConfig defaultPluginFactory = lazyPluginMapInstance.defaultPluginFactory();
+            final WrappedPluginFactoryWithConfig exceptionPluginFactory = lazyPluginMapInstance
+                    .exceptionPluginFactory();
 
             final EventDataConsumer consumer = new EventDataConsumer(
                     context.getLogger(),
                     defaultOutput,
                     pluginFactories,
                     defaultPluginFactory,
+                    exceptionPluginFactory,
                     lazyInstance.metricRegistry()
             );
             consumer
@@ -147,6 +150,7 @@ public class SyslogBridge {
                 context.getLogger().severe("Exiting because unexpected throwable was caught: <" + t + ">");
             }
             System.exit(1);
+            throw t;
         }
     }
 }

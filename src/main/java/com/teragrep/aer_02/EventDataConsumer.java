@@ -72,17 +72,20 @@ final class EventDataConsumer {
     private final Map<String, WrappedPluginFactoryWithConfig> pluginFactories;
     private final MetricRegistry metricRegistry;
     private final WrappedPluginFactoryWithConfig defaultPluginFactory;
+    private final WrappedPluginFactoryWithConfig exceptionPluginFactory;
 
     EventDataConsumer(
             final Logger logger,
             final Output output,
             final Map<String, WrappedPluginFactoryWithConfig> pluginFactories,
             final WrappedPluginFactoryWithConfig defaultPluginFactory,
+            final WrappedPluginFactoryWithConfig exceptionPluginFactory,
             final MetricRegistry metricRegistry
     ) {
         this.logger = logger;
         this.metricRegistry = metricRegistry;
         this.pluginFactories = pluginFactories;
+        this.exceptionPluginFactory = exceptionPluginFactory;
         this.defaultPluginFactory = defaultPluginFactory;
         this.output = output;
     }
@@ -104,11 +107,27 @@ final class EventDataConsumer {
                 // non-json event
                 pluginFactoryWithConfig = defaultPluginFactory;
             }
+
             final Plugin plugin = pluginFactoryWithConfig
                     .pluginFactory()
                     .plugin(pluginFactoryWithConfig.pluginFactoryConfig().configPath());
 
-            final List<SyslogMessage> syslogMessages = plugin.syslogMessage(parsedEvent);
+            List<SyslogMessage> syslogMessages;
+            try {
+                syslogMessages = plugin.syslogMessage(parsedEvent);
+            }
+            catch (final PluginException e) {
+                try {
+                    syslogMessages = exceptionPluginFactory
+                            .pluginFactory()
+                            .plugin(exceptionPluginFactory.pluginFactoryConfig().configPath())
+                            .syslogMessage(parsedEvent);
+                }
+                catch (final PluginException e2) {
+                    throw new IllegalStateException("Exception plugin failed!", e2);
+                }
+            }
+
             syslogMessages.forEach(this::sendToOutput);
         }
     }

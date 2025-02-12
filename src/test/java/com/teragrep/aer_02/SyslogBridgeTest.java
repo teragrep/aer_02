@@ -157,13 +157,19 @@ public final class SyslogBridgeTest {
 
     @Test
     void testSyslogBridgeWithJsonRecordsData() {
+        // This should use the NLFPlugin
         PartitionContextFake pcf = new PartitionContextFake("eventhub.123", "test1", "$Default", "0");
         Map<String, Object> props = new HashMap<>();
         final SyslogBridge bridge = new SyslogBridge();
 
         final String jsonRecords = Json
                 .createObjectBuilder()
-                .add("records", Json.createArrayBuilder().add("record1").add("record2").add("record3").build())
+                .add(
+                        "records",
+                        Json
+                                .createArrayBuilder()
+                                .add(Json.createObjectBuilder().add("TimeGenerated", "2020-01-01T00:00:00.000Z").add("_ResourceId", "/1/2/3/4/5/6/7/8").add("AppRoleName", "app-role-name")).add(Json.createObjectBuilder().add("TimeGenerated", "2021-01-01T00:00:00.000Z").add("_ResourceId", "/1/2/3/4/5/6/7/8").add("AppRoleName", "app-role-name")).add(Json.createObjectBuilder().add("TimeGenerated", "2022-01-01T00:00:00.000Z").add("_ResourceId", "/1/2/3/4/5/6/7/8").add("AppRoleName", "app-role-name")).build()
+                )
                 .build()
                 .toString();
 
@@ -185,15 +191,15 @@ public final class SyslogBridgeTest {
         };
 
         final String[] expectedMessages = new String[] {
-                "\"record1\"",
-                "\"record2\"",
-                "\"record3\"",
-                "\"record1\"",
-                "\"record2\"",
-                "\"record3\"",
-                "\"record1\"",
-                "\"record2\"",
-                "\"record3\""
+                "{\"TimeGenerated\":\"2020-01-01T00:00:00.000Z\",\"_ResourceId\":\"/1/2/3/4/5/6/7/8\",\"AppRoleName\":\"app-role-name\"}",
+                "{\"TimeGenerated\":\"2021-01-01T00:00:00.000Z\",\"_ResourceId\":\"/1/2/3/4/5/6/7/8\",\"AppRoleName\":\"app-role-name\"}",
+                "{\"TimeGenerated\":\"2022-01-01T00:00:00.000Z\",\"_ResourceId\":\"/1/2/3/4/5/6/7/8\",\"AppRoleName\":\"app-role-name\"}",
+                "{\"TimeGenerated\":\"2020-01-01T00:00:00.000Z\",\"_ResourceId\":\"/1/2/3/4/5/6/7/8\",\"AppRoleName\":\"app-role-name\"}",
+                "{\"TimeGenerated\":\"2021-01-01T00:00:00.000Z\",\"_ResourceId\":\"/1/2/3/4/5/6/7/8\",\"AppRoleName\":\"app-role-name\"}",
+                "{\"TimeGenerated\":\"2022-01-01T00:00:00.000Z\",\"_ResourceId\":\"/1/2/3/4/5/6/7/8\",\"AppRoleName\":\"app-role-name\"}",
+                "{\"TimeGenerated\":\"2020-01-01T00:00:00.000Z\",\"_ResourceId\":\"/1/2/3/4/5/6/7/8\",\"AppRoleName\":\"app-role-name\"}",
+                "{\"TimeGenerated\":\"2021-01-01T00:00:00.000Z\",\"_ResourceId\":\"/1/2/3/4/5/6/7/8\",\"AppRoleName\":\"app-role-name\"}",
+                "{\"TimeGenerated\":\"2022-01-01T00:00:00.000Z\",\"_ResourceId\":\"/1/2/3/4/5/6/7/8\",\"AppRoleName\":\"app-role-name\"}"
         };
 
         int loops = 0;
@@ -202,8 +208,8 @@ public final class SyslogBridgeTest {
             frame.load(new ByteArrayInputStream(message.getBytes(StandardCharsets.UTF_8)));
             Assertions.assertTrue(Assertions.assertDoesNotThrow(frame::next));
             Assertions.assertEquals(expectedMessages[loops], frame.msg.toString());
-            Assertions.assertEquals("localhost.localdomain", frame.hostname.toString());
-            Assertions.assertEquals("aer-02", frame.appName.toString());
+            Assertions.assertEquals("md5-6f401cfe0a539a619fa9c17798d199258", frame.hostname.toString());
+            Assertions.assertEquals("app-role-name", frame.appName.toString());
             Assertions.assertEquals(expectedSeqNums[loops], frame.msgId.toString());
             loops++;
         }
