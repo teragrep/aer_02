@@ -3,15 +3,22 @@
 // 2. Update the issues link in Contributing section in the readme file
 // 3. Update the discussion link in config.yml file in .github/ISSUE_TEMPLATE directory
 
-= repo-template
+= aer_02 (Teragrep syslog bridge function for Microsoft Azure EventHub)
 
 // Add a short description of your project. Tell what your project does and what it's used for.
 
-This is a template repository for Teragrep organization.
+Allows conversion of Azure EventHub events to Syslog messages and sending them to a RELP server.
+Additional processing of the events can be performed based on the `resourceId` of the event and an assigned `Plugin`.
 
 == Features
 
 // List your project's features
+* Receives events from Azure EventHub using Azure Java Function.
+* Converts said events to Syslog format.
+* Allows sending said Syslog-formatted messages to a RELP server.
+* Allows the usage of a certificate from Azure KeyVault for TLS encryption.
+* Provides HTTPTrigger function for Prometheus metrics.
+* Implements akv_01 library for additional syslog message processing based on `resourceId` from events received from EventHub.
 
 == Documentation
 
@@ -20,16 +27,124 @@ See the official documentation on https://docs.teragrep.com[docs.teragrep.com].
 == Limitations
 
 // If your project has limitations, please list them. Otherwise remove this section.
+Currently only a default `Plugin` is included in the project. If other type of additional message processing is required,
+a class implementing `Plugin` and `PluginFactory` must be created and added to the configuration file.
 
 == How to [compile/use/implement]
 
 // add instructions how people can start to use your project
 
+=== Compile using Maven
+
+The project can be compiled using Maven. It is recommended to use Java 11.
+[source,bash]
+----
+$ JAVA_HOME=/usr/lib/jvm/java-11-openjdk mvn clean package
+----
+Using the `package` lifecycle ensures that the necessary JSON manifests to run the Azure Functions are generated.
+
+=== Usage in Azure
+
+The project must be deployed as a Function in a Function App. The Function App requires or supports the following Environment variables:
+
+
+|===
+|Environment variable |Description |Default value |Possible values
+
+|EventHubName
+|Specifies the EventHub name from which to receive the events. Must be provided.
+|N/A
+|Any valid EventHub name
+
+|EventHubConnectionString
+|Connection string required to communicate with an EventHub in a namespace. Must be provided.
+|N/A
+|Valid EventHub connection string
+
+|RELP_TLS_MODE
+|Specifies which TLS implementation should be used. By default, no encryption is used.
+|`none`
+|`none`, `keyVault`
+
+|PLUGINS_CONFIG_PATH
+|Specifies the plugin configuration file path.
+By default, no configuration is loaded and the DefaultPlugin is used for all resourceIds.
+|`""`
+|valid path, `""`
+
+|RELP_CONNECTION_TIMEOUT
+|Specifies the time to wait before timing out connection in milliseconds.
+|2500
+|milliseconds (positive integer)
+
+|RELP_TRANSACTION_READ_TIMEOUT
+|Time to wait for destination to acknowledge sent data in milliseconds. Low values may cause duplicates.
+|1500
+|milliseconds (positive integer)
+
+|RELP_TRANSACTION_WRITE_TIMEOUT
+|Time to wait for destination to accept data in milliseconds.
+|1500
+|milliseconds (positive integer)
+
+|RELP_CONNECTION_RETRY_INTERVAL
+|Time to wait between reconnection attempts in milliseconds.
+|500
+|milliseconds (positive integer)
+
+|RELP_CONNECTION_PORT
+|RELP connection destination port
+|601
+|valid destination port
+
+|RELP_CONNECTION_ADDRESS
+|RELP connection destination address
+|localhost
+|valid destination address
+
+|RELP_REBIND_REQUEST_AMOUNT
+|Rebinds the RELP connection after this amount of records is sent,
+provided that `RELP_REBIND_ENABLED` is set to `true`.
+|100000
+|valid amount of records
+
+|RELP_REBIND_ENABLED
+|Rebinds the RELP connection after `RELP_REBIND_REQUEST_AMOUNT` of records exceeded.
+|`true`
+|`true`, `false`
+
+|RELP_MAX_IDLE_DURATION
+|Reconnects to the RELP server before sending messages if the set duration has passed without sending any messages.
+|`PT2M30S`
+|`java.time.Duration` String representation (`PTnHnMnS`) If `n=0`, it can be omitted.
+
+|RELP_MAX_IDLE_ENABLED
+|Enable reconnections if duration described by `RELP_MAX_IDLE_DURATION` passes without sending any messages.
+|false
+|`true`, `false`
+
+|RELP_CONNECTION_KEEPALIVE
+|Enable sending alive packets to RELP server
+|true
+|`true`, `false`
+
+|SYSLOG_APPNAME
+|Default app name to be used in the resulting syslog messages. May be overridden by a Plugin implementation.
+|aer-02
+|any string
+
+|SYSLOG_HOSTNAME
+|Default hostname to be used in the resulting syslog messages. May be overridden by a Plugin implementation.
+|localhost.localdomain
+|any string
+|===
+
+
 == Contributing
 
 // Change the repository name in the issues link to match with your project's name
 
-You can involve yourself with our project by https://github.com/teragrep/repo-template/issues/new/choose[opening an issue] or submitting a pull request.
+You can involve yourself with our project by https://github.com/teragrep/aer_02/issues/new/choose[opening an issue] or submitting a pull request.
 
 Contribution requirements:
 

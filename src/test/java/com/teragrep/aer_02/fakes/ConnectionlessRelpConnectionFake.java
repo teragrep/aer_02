@@ -1,5 +1,5 @@
 /*
- * Teragrep Eventhub Reader as an Azure Function
+ * Teragrep syslog bridge function for Microsoft Azure EventHub
  * Copyright (C) 2024 Suomen Kanuuna Oy
  *
  * This program is free software: you can redistribute it and/or modify
