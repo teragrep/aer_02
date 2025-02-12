@@ -6,7 +6,7 @@
   <version>${revision}${sha1}${changelist}</version>
   <packaging>jar</packaging>
   <name>aer_02</name>
-  <description>Azure EventHub to syslog bridge using Azure Java Function</description>
+  <description>Teragrep syslog bridge function for Microsoft Azure EventHub</description>
   <url>https://teragrep.com</url>
   <licenses>
     <license>
