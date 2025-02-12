@@ -61,6 +61,7 @@ import com.teragrep.net_01.eventloop.EventLoop;
 import com.teragrep.net_01.eventloop.EventLoopFactory;
 import com.teragrep.net_01.server.Server;
 import com.teragrep.net_01.server.ServerFactory;
+import com.teragrep.nlf_01.NLFPluginFactory;
 import com.teragrep.rlo_06.RFC5424Frame;
 import com.teragrep.rlp_01.SSLContextFactory;
 import com.teragrep.rlp_01.client.SSLContextSupplier;
@@ -191,6 +192,10 @@ public class EventDataConsumerTlsTest {
                 Logger.getAnonymousLogger(),
                 output,
                 new HashMap<>(),
+                new WrappedPluginFactoryWithConfig(
+                        new NLFPluginFactory(),
+                        new PluginFactoryConfigImpl(NLFPluginFactory.class.getName(), "")
+                ),
                 new WrappedPluginFactoryWithConfig(
                         new DefaultPluginFactory(),
                         new PluginFactoryConfigImpl(

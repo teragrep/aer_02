@@ -53,6 +53,7 @@ import com.teragrep.aer_02.plugin.WrappedPluginFactoryWithConfig;
 import com.teragrep.akv_01.event.EventImpl;
 import com.teragrep.akv_01.event.ParsedEvent;
 import com.teragrep.akv_01.plugin.PluginFactoryConfigImpl;
+import com.teragrep.nlf_01.NLFPluginFactory;
 import jakarta.json.Json;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -86,6 +87,10 @@ public class EventDataConsumerTest {
                 Logger.getAnonymousLogger(),
                 new OutputFake(),
                 new HashMap<>(),
+                new WrappedPluginFactoryWithConfig(
+                        new NLFPluginFactory(),
+                        new PluginFactoryConfigImpl(NLFPluginFactory.class.getName(), "")
+                ),
                 new WrappedPluginFactoryWithConfig(
                         new DefaultPluginFactory(),
                         new PluginFactoryConfigImpl(

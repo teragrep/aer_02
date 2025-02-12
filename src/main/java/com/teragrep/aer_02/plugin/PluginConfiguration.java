@@ -47,6 +47,7 @@ package com.teragrep.aer_02.plugin;
 
 import com.teragrep.aer_02.config.source.Sourceable;
 import com.teragrep.akv_01.json.JsonFile;
+import com.teragrep.nlf_01.NLFPluginFactory;
 import jakarta.json.Json;
 import jakarta.json.JsonStructure;
 import jakarta.json.JsonValue;
@@ -68,7 +69,8 @@ public final class PluginConfiguration {
         if (configPath.isEmpty()) {
             return Json
                     .createObjectBuilder()
-                    .add("defaultPluginFactoryClass", DefaultPluginFactory.class.getName())
+                    .add("defaultPluginFactoryClass", NLFPluginFactory.class.getName())
+                    .add("exceptionPluginFactoryClass", DefaultPluginFactory.class.getName())
                     .add("resourceIds", JsonValue.EMPTY_JSON_ARRAY)
                     .build();
         }

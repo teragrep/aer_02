@@ -60,6 +60,7 @@ public final class MappedPluginFactories {
 
     private final Map<String, PluginFactoryConfig> pluginFactoryConfigs;
     private final String defaultPluginFactoryClassName;
+    private final String exceptionPluginFactoryClassName;
     private final String realHostname;
     private final SyslogConfig syslogConfig;
     private final Logger logger;
@@ -67,12 +68,14 @@ public final class MappedPluginFactories {
     public MappedPluginFactories(
             final Map<String, PluginFactoryConfig> pluginFactoryConfigs,
             final String defaultPluginFactoryClassName,
+            final String exceptionPluginFactoryClassName,
             final String realHostname,
             final SyslogConfig syslogConfig,
             final Logger logger
     ) {
         this.pluginFactoryConfigs = pluginFactoryConfigs;
         this.defaultPluginFactoryClassName = defaultPluginFactoryClassName;
+        this.exceptionPluginFactoryClassName = exceptionPluginFactoryClassName;
         this.realHostname = realHostname;
         this.syslogConfig = syslogConfig;
         this.logger = logger;
@@ -85,9 +88,13 @@ public final class MappedPluginFactories {
     }
 
     public WrappedPluginFactoryWithConfig defaultPluginFactoryWithConfig() {
+        return newWrappedPluginFactoryWithConfig(new PluginFactoryConfigImpl(defaultPluginFactoryClassName, ""));
+    }
+
+    public WrappedPluginFactoryWithConfig exceptionPluginFactoryWithConfig() {
         return newWrappedPluginFactoryWithConfig(
                 new PluginFactoryConfigImpl(
-                        defaultPluginFactoryClassName,
+                        exceptionPluginFactoryClassName,
                         Json.createObjectBuilder().add("realHostname", realHostname).add("syslogHostname", syslogConfig.hostName()).add("syslogAppname", syslogConfig.appName()).build().toString()
                 )
         );
@@ -110,18 +117,22 @@ public final class MappedPluginFactories {
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        MappedPluginFactories that = (MappedPluginFactories) o;
+        final MappedPluginFactories that = (MappedPluginFactories) o;
         return Objects.equals(pluginFactoryConfigs, that.pluginFactoryConfigs) && Objects
                 .equals(defaultPluginFactoryClassName, that.defaultPluginFactoryClassName)
-                && Objects.equals(realHostname, that.realHostname) && Objects.equals(syslogConfig, that.syslogConfig);
+                && Objects.equals(exceptionPluginFactoryClassName, that.exceptionPluginFactoryClassName) && Objects.equals(realHostname, that.realHostname) && Objects.equals(syslogConfig, that.syslogConfig);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(pluginFactoryConfigs, defaultPluginFactoryClassName, realHostname, syslogConfig);
+        return Objects
+                .hash(
+                        pluginFactoryConfigs, defaultPluginFactoryClassName, exceptionPluginFactoryClassName,
+                        realHostname, syslogConfig
+                );
     }
 }

@@ -55,6 +55,8 @@ import com.teragrep.rlo_14.SyslogMessage;
 import jakarta.json.JsonException;
 
 import java.time.Instant;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -75,6 +77,16 @@ public final class DefaultPlugin implements Plugin {
     @Override
     public List<SyslogMessage> syslogMessage(final ParsedEvent parsedEvent) {
         final List<SyslogMessage> syslogMessages = new ArrayList<>();
+        ZonedDateTime time;
+        boolean timeSet;
+        try {
+            time = parsedEvent.enqueuedTime().zonedDateTime();
+            timeSet = true;
+        }
+        catch (DateTimeParseException ignored) {
+            time = ZonedDateTime.now();
+            timeSet = false;
+        }
 
         final SDElement sdId = new SDElement("event_id@48577")
                 .addSDParam("uuid", UUID.randomUUID().toString())
@@ -96,14 +108,12 @@ public final class DefaultPlugin implements Plugin {
 
         final SDElement sdEvent = new SDElement("aer_02_event@48577")
                 .addSDParam("offset", parsedEvent.offset() == null ? "" : parsedEvent.offset())
-                .addSDParam(
-                        "enqueued_time", parsedEvent.enqueuedTime() == null ? "" : parsedEvent.enqueuedTime().toString()
-                )
+                .addSDParam("enqueued_time", timeSet ? time.toInstant().toString() : "")
                 .addSDParam("partition_key", partitionKey == null ? "" : partitionKey);
         parsedEvent.properties().forEach((key, value) -> sdEvent.addSDParam("property_" + key, value.toString()));
 
         final SDElement sdComponentInfo = new SDElement("aer_02@48577")
-                .addSDParam("timestamp_source", parsedEvent.enqueuedTime() == null ? "generated" : "timeEnqueued");
+                .addSDParam("timestamp_source", timeSet ? "timeEnqueued" : "generated");
 
         List<String> records = new ArrayList<>();
         if (parsedEvent.isJsonStructure()) {
@@ -119,10 +129,10 @@ public final class DefaultPlugin implements Plugin {
             records.add(parsedEvent.asString());
         }
 
-        records.forEach(record -> {
+        for (final String record : records) {
             syslogMessages
-                    .add(new SyslogMessage().withSeverity(Severity.INFORMATIONAL).withFacility(Facility.LOCAL0).withTimestamp(parsedEvent.enqueuedTime() == null ? Instant.now().toEpochMilli() : parsedEvent.enqueuedTime().toInstant().toEpochMilli()).withHostname(syslogHostname).withAppName(syslogAppname).withSDElement(sdId).withSDElement(sdPartition).withSDElement(sdEvent).withSDElement(sdComponentInfo).withMsgId(String.valueOf(parsedEvent.systemProperties().getOrDefault("SequenceNumber", "0"))).withMsg(record));
-        });
+                    .add(new SyslogMessage().withSeverity(Severity.INFORMATIONAL).withFacility(Facility.LOCAL0).withTimestamp(timeSet ? time.toInstant().toEpochMilli() : Instant.now().toEpochMilli()).withHostname(syslogHostname).withAppName(syslogAppname).withSDElement(sdId).withSDElement(sdPartition).withSDElement(sdEvent).withSDElement(sdComponentInfo).withMsgId(String.valueOf(parsedEvent.systemProperties().getOrDefault("SequenceNumber", "0"))).withMsg(record));
+        }
 
         return syslogMessages;
     }

@@ -1,5 +1,6 @@
 {
   "defaultPluginFactoryClass": "com.teragrep.aer_02.fakes.ThrowingPluginFactory",
+  "exceptionPluginFactoryClass": "",
   "resourceIds": [
     {
       "resourceId": "123",
