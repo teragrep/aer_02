@@ -168,10 +168,11 @@ public final class SyslogBridgeTest {
                                                     ))
                                     )
                     );
+
             Assertions
                     .assertEquals(
-                            "com.teragrep.akv_01.plugin.PluginException: jakarta.json.JsonException: Event was not a JSON structure",
-                            sdElems.get("aer_02_event@48577").get("property_aer-02-exception")
+                            "{\\\"aer-02-exception\\\":\\\"com.teragrep.akv_01.plugin.PluginException: jakarta.json.JsonException: Event was not a JSON structure\\\"}",
+                            sdElems.get("aer_02_event@48577").get("properties")
                     );
 
             loops++;

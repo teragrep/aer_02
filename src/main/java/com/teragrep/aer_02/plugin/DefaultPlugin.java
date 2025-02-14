@@ -48,6 +48,7 @@ package com.teragrep.aer_02.plugin;
 import com.teragrep.aer_02.json.JsonRecords;
 import com.teragrep.akv_01.event.ParsedEvent;
 import com.teragrep.akv_01.plugin.Plugin;
+import com.teragrep.nlf_01.PropertiesJson;
 import com.teragrep.rlo_14.Facility;
 import com.teragrep.rlo_14.SDElement;
 import com.teragrep.rlo_14.Severity;
@@ -57,10 +58,7 @@ import jakarta.json.JsonException;
 import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeParseException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.UUID;
+import java.util.*;
 
 public final class DefaultPlugin implements Plugin {
 
@@ -109,8 +107,8 @@ public final class DefaultPlugin implements Plugin {
         final SDElement sdEvent = new SDElement("aer_02_event@48577")
                 .addSDParam("offset", parsedEvent.offset() == null ? "" : parsedEvent.offset())
                 .addSDParam("enqueued_time", timeSet ? time.toInstant().toString() : "")
-                .addSDParam("partition_key", partitionKey == null ? "" : partitionKey);
-        parsedEvent.properties().forEach((key, value) -> sdEvent.addSDParam("property_" + key, value.toString()));
+                .addSDParam("partition_key", partitionKey == null ? "" : partitionKey)
+                .addSDParam("properties", new PropertiesJson(parsedEvent.properties()).toJsonObject().toString());
 
         final SDElement sdComponentInfo = new SDElement("aer_02@48577")
                 .addSDParam("timestamp_source", timeSet ? "timeEnqueued" : "generated");
