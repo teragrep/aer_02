@@ -47,6 +47,7 @@ package com.teragrep.aer_02;
 
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;
+import com.teragrep.aer_02.plugin.ParsedEventWithException;
 import com.teragrep.aer_02.plugin.WrappedPluginFactoryWithConfig;
 import com.teragrep.akv_01.event.ParsedEvent;
 import com.teragrep.rlo_14.SDElement;
@@ -121,7 +122,7 @@ final class EventDataConsumer {
                     syslogMessages = exceptionPluginFactory
                             .pluginFactory()
                             .plugin(exceptionPluginFactory.pluginFactoryConfig().configPath())
-                            .syslogMessage(parsedEvent);
+                            .syslogMessage(new ParsedEventWithException(parsedEvent, e));
                 }
                 catch (final PluginException e2) {
                     throw new IllegalStateException("Exception plugin failed!", e2);
