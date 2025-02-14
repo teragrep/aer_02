@@ -255,7 +255,7 @@ public final class SyslogBridgeTest {
                                                     ))
                                     )
                     );
-            Assertions.assertFalse(sdElems.get("aer_02_event@48577").containsKey("property_aer-02-exception"));
+            Assertions.assertEquals("{}", sdElems.get("aer_02_event@48577").get("properties"));
 
             loops++;
         }
