@@ -74,6 +74,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 /**
  * Unit test for SyslogBridge class.
@@ -149,6 +150,30 @@ public final class SyslogBridgeTest {
             Assertions.assertEquals("localhost.localdomain", frame.hostname.toString());
             Assertions.assertEquals("aer-02", frame.appName.toString());
             Assertions.assertEquals(String.valueOf(loops), frame.msgId.toString());
+
+            final Map<String, Map<String, String>> sdElems = frame.structuredData.sdElements
+                    .stream()
+                    .collect(
+                            Collectors
+                                    .toMap(
+                                            (sde -> sde.sdElementId.toString()),
+                                            (sde -> sde.sdParams
+                                                    .stream()
+                                                    .collect(
+                                                            Collectors
+                                                                    .toMap(
+                                                                            sdp -> sdp.sdParamKey.toString(),
+                                                                            sdp -> sdp.sdParamValue.toString()
+                                                                    )
+                                                    ))
+                                    )
+                    );
+            Assertions
+                    .assertEquals(
+                            "com.teragrep.akv_01.plugin.PluginException: jakarta.json.JsonException: Event was not a JSON structure",
+                            sdElems.get("aer_02_event@48577").get("property_aer-02-exception")
+                    );
+
             loops++;
         }
 
@@ -168,7 +193,7 @@ public final class SyslogBridgeTest {
                         "records",
                         Json
                                 .createArrayBuilder()
-                                .add(Json.createObjectBuilder().add("TimeGenerated", "2020-01-01T00:00:00.000Z").add("_ResourceId", "/1/2/3/4/5/6/7/8").add("AppRoleName", "app-role-name")).add(Json.createObjectBuilder().add("TimeGenerated", "2021-01-01T00:00:00.000Z").add("_ResourceId", "/1/2/3/4/5/6/7/8").add("AppRoleName", "app-role-name")).add(Json.createObjectBuilder().add("TimeGenerated", "2022-01-01T00:00:00.000Z").add("_ResourceId", "/1/2/3/4/5/6/7/8").add("AppRoleName", "app-role-name")).build()
+                                .add(Json.createObjectBuilder().add("TimeGenerated", "2020-01-01T00:00:00.000Z").add("_ResourceId", "/1/2/3/4/5/6/7/8").add("AppRoleName", "app-role-name").add("Type", "AppTraces")).add(Json.createObjectBuilder().add("TimeGenerated", "2021-01-01T00:00:00.000Z").add("_ResourceId", "/1/2/3/4/5/6/7/8").add("AppRoleName", "app-role-name").add("Type", "AppTraces")).add(Json.createObjectBuilder().add("TimeGenerated", "2022-01-01T00:00:00.000Z").add("_ResourceId", "/1/2/3/4/5/6/7/8").add("AppRoleName", "app-role-name").add("Type", "AppTraces")).build()
                 )
                 .build()
                 .toString();
@@ -191,15 +216,15 @@ public final class SyslogBridgeTest {
         };
 
         final String[] expectedMessages = new String[] {
-                "{\"TimeGenerated\":\"2020-01-01T00:00:00.000Z\",\"_ResourceId\":\"/1/2/3/4/5/6/7/8\",\"AppRoleName\":\"app-role-name\"}",
-                "{\"TimeGenerated\":\"2021-01-01T00:00:00.000Z\",\"_ResourceId\":\"/1/2/3/4/5/6/7/8\",\"AppRoleName\":\"app-role-name\"}",
-                "{\"TimeGenerated\":\"2022-01-01T00:00:00.000Z\",\"_ResourceId\":\"/1/2/3/4/5/6/7/8\",\"AppRoleName\":\"app-role-name\"}",
-                "{\"TimeGenerated\":\"2020-01-01T00:00:00.000Z\",\"_ResourceId\":\"/1/2/3/4/5/6/7/8\",\"AppRoleName\":\"app-role-name\"}",
-                "{\"TimeGenerated\":\"2021-01-01T00:00:00.000Z\",\"_ResourceId\":\"/1/2/3/4/5/6/7/8\",\"AppRoleName\":\"app-role-name\"}",
-                "{\"TimeGenerated\":\"2022-01-01T00:00:00.000Z\",\"_ResourceId\":\"/1/2/3/4/5/6/7/8\",\"AppRoleName\":\"app-role-name\"}",
-                "{\"TimeGenerated\":\"2020-01-01T00:00:00.000Z\",\"_ResourceId\":\"/1/2/3/4/5/6/7/8\",\"AppRoleName\":\"app-role-name\"}",
-                "{\"TimeGenerated\":\"2021-01-01T00:00:00.000Z\",\"_ResourceId\":\"/1/2/3/4/5/6/7/8\",\"AppRoleName\":\"app-role-name\"}",
-                "{\"TimeGenerated\":\"2022-01-01T00:00:00.000Z\",\"_ResourceId\":\"/1/2/3/4/5/6/7/8\",\"AppRoleName\":\"app-role-name\"}"
+                "{\"TimeGenerated\":\"2020-01-01T00:00:00.000Z\",\"_ResourceId\":\"/1/2/3/4/5/6/7/8\",\"AppRoleName\":\"app-role-name\",\"Type\":\"AppTraces\"}",
+                "{\"TimeGenerated\":\"2021-01-01T00:00:00.000Z\",\"_ResourceId\":\"/1/2/3/4/5/6/7/8\",\"AppRoleName\":\"app-role-name\",\"Type\":\"AppTraces\"}",
+                "{\"TimeGenerated\":\"2022-01-01T00:00:00.000Z\",\"_ResourceId\":\"/1/2/3/4/5/6/7/8\",\"AppRoleName\":\"app-role-name\",\"Type\":\"AppTraces\"}",
+                "{\"TimeGenerated\":\"2020-01-01T00:00:00.000Z\",\"_ResourceId\":\"/1/2/3/4/5/6/7/8\",\"AppRoleName\":\"app-role-name\",\"Type\":\"AppTraces\"}",
+                "{\"TimeGenerated\":\"2021-01-01T00:00:00.000Z\",\"_ResourceId\":\"/1/2/3/4/5/6/7/8\",\"AppRoleName\":\"app-role-name\",\"Type\":\"AppTraces\"}",
+                "{\"TimeGenerated\":\"2022-01-01T00:00:00.000Z\",\"_ResourceId\":\"/1/2/3/4/5/6/7/8\",\"AppRoleName\":\"app-role-name\",\"Type\":\"AppTraces\"}",
+                "{\"TimeGenerated\":\"2020-01-01T00:00:00.000Z\",\"_ResourceId\":\"/1/2/3/4/5/6/7/8\",\"AppRoleName\":\"app-role-name\",\"Type\":\"AppTraces\"}",
+                "{\"TimeGenerated\":\"2021-01-01T00:00:00.000Z\",\"_ResourceId\":\"/1/2/3/4/5/6/7/8\",\"AppRoleName\":\"app-role-name\",\"Type\":\"AppTraces\"}",
+                "{\"TimeGenerated\":\"2022-01-01T00:00:00.000Z\",\"_ResourceId\":\"/1/2/3/4/5/6/7/8\",\"AppRoleName\":\"app-role-name\",\"Type\":\"AppTraces\"}"
         };
 
         int loops = 0;
@@ -208,9 +233,29 @@ public final class SyslogBridgeTest {
             frame.load(new ByteArrayInputStream(message.getBytes(StandardCharsets.UTF_8)));
             Assertions.assertTrue(Assertions.assertDoesNotThrow(frame::next));
             Assertions.assertEquals(expectedMessages[loops], frame.msg.toString());
-            Assertions.assertEquals("md5-6f401cfe0a539a619fa9c17798d199258", frame.hostname.toString());
+            Assertions.assertEquals("md5-6f401cfe0a539a619fa9c17798d19925-8", frame.hostname.toString());
             Assertions.assertEquals("app-role-name", frame.appName.toString());
             Assertions.assertEquals(expectedSeqNums[loops], frame.msgId.toString());
+
+            final Map<String, Map<String, String>> sdElems = frame.structuredData.sdElements
+                    .stream()
+                    .collect(
+                            Collectors
+                                    .toMap(
+                                            (sde -> sde.sdElementId.toString()),
+                                            (sde -> sde.sdParams
+                                                    .stream()
+                                                    .collect(
+                                                            Collectors
+                                                                    .toMap(
+                                                                            sdp -> sdp.sdParamKey.toString(),
+                                                                            sdp -> sdp.sdParamValue.toString()
+                                                                    )
+                                                    ))
+                                    )
+                    );
+            Assertions.assertFalse(sdElems.get("aer_02_event@48577").containsKey("property_aer-02-exception"));
+
             loops++;
         }
 
