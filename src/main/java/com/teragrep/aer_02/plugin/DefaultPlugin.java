@@ -62,11 +62,15 @@ import java.util.*;
 
 public final class DefaultPlugin implements Plugin {
 
-    private final String realHostname;
+    private final RealHostname realHostname;
     private final String syslogHostname;
     private final String syslogAppname;
 
     public DefaultPlugin(final String realHostname, final String syslogHostname, final String syslogAppname) {
+        this(new RealHostname(realHostname), syslogHostname, syslogAppname);
+    }
+
+    public DefaultPlugin(final RealHostname realHostname, final String syslogHostname, final String syslogAppname) {
         this.realHostname = realHostname;
         this.syslogHostname = syslogHostname;
         this.syslogAppname = syslogAppname;
@@ -75,12 +79,12 @@ public final class DefaultPlugin implements Plugin {
     @Override
     public List<SyslogMessage> syslogMessage(final ParsedEvent parsedEvent) {
         final List<SyslogMessage> syslogMessages = new ArrayList<>();
-        ZonedDateTime time;
+        ZonedDateTime enqueuedTime;
         if (!parsedEvent.enqueuedTimeUtc().isStub()) {
-            time = parsedEvent.enqueuedTimeUtc().zonedDateTime();
+            enqueuedTime = parsedEvent.enqueuedTimeUtc().zonedDateTime();
         }
         else {
-            time = ZonedDateTime.now();
+            enqueuedTime = ZonedDateTime.now();
         }
 
         String fullyQualifiedNamespace = "";
@@ -103,7 +107,7 @@ public final class DefaultPlugin implements Plugin {
 
         final SDElement sdId = new SDElement("event_id@48577")
                 .addSDParam("uuid", UUID.randomUUID().toString())
-                .addSDParam("hostname", new RealHostname("localhost").hostname())
+                .addSDParam("hostname", realHostname.hostname())
                 .addSDParam("unixtime", Instant.now().toString())
                 .addSDParam("id_source", "aer_02");
 
@@ -119,7 +123,10 @@ public final class DefaultPlugin implements Plugin {
 
         final SDElement sdEvent = new SDElement("aer_02_event@48577")
                 .addSDParam("offset", offset)
-                .addSDParam("enqueued_time", parsedEvent.enqueuedTimeUtc().isStub() ? "" : time.toInstant().toString())
+                .addSDParam(
+                        "enqueued_time",
+                        parsedEvent.enqueuedTimeUtc().isStub() ? "" : enqueuedTime.toInstant().toString()
+                )
                 .addSDParam("partition_key", partitionKey)
                 .addSDParam("properties", new PropertiesJson(parsedEvent.properties()).toJsonObject().toString());
 
@@ -147,7 +154,7 @@ public final class DefaultPlugin implements Plugin {
 
         for (final String record : records) {
             syslogMessages
-                    .add(new SyslogMessage().withSeverity(Severity.INFORMATIONAL).withFacility(Facility.LOCAL0).withTimestamp(!parsedEvent.enqueuedTimeUtc().isStub() ? time.toInstant().toEpochMilli() : Instant.now().toEpochMilli()).withHostname(syslogHostname).withAppName(syslogAppname).withSDElement(sdId).withSDElement(sdPartition).withSDElement(sdEvent).withSDElement(sdComponentInfo).withMsgId(seqNum).withMsg(record));
+                    .add(new SyslogMessage().withSeverity(Severity.INFORMATIONAL).withFacility(Facility.LOCAL0).withTimestamp(!parsedEvent.enqueuedTimeUtc().isStub() ? enqueuedTime.toInstant().toEpochMilli() : Instant.now().toEpochMilli()).withHostname(syslogHostname).withAppName(syslogAppname).withSDElement(sdId).withSDElement(sdPartition).withSDElement(sdEvent).withSDElement(sdComponentInfo).withMsgId(seqNum).withMsg(record));
         }
 
         return syslogMessages;
