@@ -46,7 +46,12 @@
 package com.teragrep.aer_02.plugin;
 
 import com.teragrep.akv_01.event.ParsedEvent;
-import com.teragrep.akv_01.time.EnqueuedTime;
+import com.teragrep.akv_01.event.metadata.offset.EventOffset;
+import com.teragrep.akv_01.event.metadata.partitionContext.EventPartitionContext;
+import com.teragrep.akv_01.event.metadata.properties.EventProperties;
+import com.teragrep.akv_01.event.metadata.properties.EventPropertiesImpl;
+import com.teragrep.akv_01.event.metadata.systemProperties.EventSystemProperties;
+import com.teragrep.akv_01.event.metadata.time.EnqueuedTime;
 import jakarta.json.JsonStructure;
 
 import java.util.HashMap;
@@ -83,29 +88,37 @@ public final class ParsedEventWithException implements ParsedEvent {
     }
 
     @Override
-    public Map<String, Object> partitionContext() {
-        return parsedEvent.partitionContext();
+    public EventPartitionContext partitionCtx() {
+        return parsedEvent.partitionCtx();
     }
 
     @Override
-    public Map<String, Object> properties() {
-        final Map<String, Object> props = new HashMap<>(parsedEvent.properties());
+    public String payload() {
+        return parsedEvent.payload();
+    }
+
+    @Override
+    public EventProperties properties() {
+        final Map<String, Object> props = new HashMap<>();
+        if (!parsedEvent.properties().isStub()) {
+            props.putAll(parsedEvent.properties().asMap());
+        }
         props.put("aer-02-exception", exception);
-        return props;
+        return new EventPropertiesImpl(props);
     }
 
     @Override
-    public Map<String, Object> systemProperties() {
+    public EventSystemProperties systemProperties() {
         return parsedEvent.systemProperties();
     }
 
     @Override
-    public EnqueuedTime enqueuedTime() {
-        return parsedEvent.enqueuedTime();
+    public EnqueuedTime enqueuedTimeUtc() {
+        return parsedEvent.enqueuedTimeUtc();
     }
 
     @Override
-    public String offset() {
+    public EventOffset offset() {
         return parsedEvent.offset();
     }
 }

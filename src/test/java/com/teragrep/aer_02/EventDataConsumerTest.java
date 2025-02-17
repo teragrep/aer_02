@@ -50,8 +50,14 @@ import com.codahale.metrics.MetricRegistry;
 import com.teragrep.aer_02.fakes.OutputFake;
 import com.teragrep.aer_02.plugin.DefaultPluginFactory;
 import com.teragrep.aer_02.plugin.WrappedPluginFactoryWithConfig;
-import com.teragrep.akv_01.event.EventImpl;
 import com.teragrep.akv_01.event.ParsedEvent;
+import com.teragrep.akv_01.event.ParsedEventFactory;
+import com.teragrep.akv_01.event.UnparsedEventImpl;
+import com.teragrep.akv_01.event.metadata.offset.EventOffsetImpl;
+import com.teragrep.akv_01.event.metadata.partitionContext.EventPartitionContextImpl;
+import com.teragrep.akv_01.event.metadata.properties.EventPropertiesImpl;
+import com.teragrep.akv_01.event.metadata.systemProperties.EventSystemPropertiesImpl;
+import com.teragrep.akv_01.event.metadata.time.EnqueuedTimeImpl;
 import com.teragrep.akv_01.plugin.PluginFactoryConfigImpl;
 import com.teragrep.nlf_01.NLFPluginFactory;
 import jakarta.json.Json;
@@ -109,7 +115,18 @@ public class EventDataConsumerTest {
             }
             String enqueuedTime = LocalDateTime.now(ZoneId.of("Z")).minusSeconds(10).toString();
             parsedEvents
-                    .add(new EventImpl("event", new HashMap<>(partitionContext), props, systemProps, enqueuedTime, String.valueOf(i)).parsedEvent());
+                    .add(
+                            new ParsedEventFactory(
+                                    new UnparsedEventImpl(
+                                            "event",
+                                            new EventPartitionContextImpl(new HashMap<>(partitionContext)),
+                                            new EventPropertiesImpl(props),
+                                            new EventSystemPropertiesImpl(systemProps),
+                                            new EnqueuedTimeImpl(enqueuedTime),
+                                            new EventOffsetImpl(String.valueOf(i))
+                                    )
+                            ).parsedEvent()
+                    );
         }
         eventDataConsumer.accept(parsedEvents);
 

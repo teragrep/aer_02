@@ -45,7 +45,13 @@
  */
 package com.teragrep.aer_02.plugin;
 
-import com.teragrep.akv_01.event.EventImpl;
+import com.teragrep.akv_01.event.ParsedEventFactory;
+import com.teragrep.akv_01.event.UnparsedEventImpl;
+import com.teragrep.akv_01.event.metadata.offset.EventOffsetImpl;
+import com.teragrep.akv_01.event.metadata.partitionContext.EventPartitionContextImpl;
+import com.teragrep.akv_01.event.metadata.properties.EventPropertiesImpl;
+import com.teragrep.akv_01.event.metadata.systemProperties.EventSystemPropertiesImpl;
+import com.teragrep.akv_01.event.metadata.time.EnqueuedTimeImpl;
 import com.teragrep.rlo_14.SyslogMessage;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.jupiter.api.Assertions;
@@ -72,7 +78,11 @@ public final class DefaultPluginTest {
 
         final DefaultPlugin defaultPlugin = new DefaultPlugin("realHostname", "syslogHostname", "syslogAppname");
         final List<SyslogMessage> msg = defaultPlugin
-                .syslogMessage(new EventImpl("event", partitionContext, props, systemProps, enqueuedTime, "0").parsedEvent());
+                .syslogMessage(
+                        new ParsedEventFactory(
+                                new UnparsedEventImpl("event", new EventPartitionContextImpl(partitionContext), new EventPropertiesImpl(props), new EventSystemPropertiesImpl(systemProps), new EnqueuedTimeImpl(enqueuedTime), new EventOffsetImpl("0"))
+                        ).parsedEvent()
+                );
 
         Assertions.assertEquals("event", msg.get(0).getMsg());
         // aer_02@48577; aer_02_event@48577; aer_02_partition@48577; event_id@48577
