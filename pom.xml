@@ -51,12 +51,12 @@
     <dependency>
       <groupId>com.teragrep</groupId>
       <artifactId>nlf_01</artifactId>
-      <version>2.2.0</version>
+      <version>2.3.0</version>
     </dependency>
     <dependency>
       <groupId>com.teragrep</groupId>
       <artifactId>akv_01</artifactId>
-      <version>6.0.0</version>
+      <version>6.3.0</version>
     </dependency>
     <!-- Azure functions -->
     <dependency>

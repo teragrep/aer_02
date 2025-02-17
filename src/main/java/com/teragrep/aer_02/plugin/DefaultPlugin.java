@@ -49,6 +49,7 @@ import com.teragrep.aer_02.json.JsonRecords;
 import com.teragrep.akv_01.event.ParsedEvent;
 import com.teragrep.akv_01.plugin.Plugin;
 import com.teragrep.nlf_01.PropertiesJson;
+import com.teragrep.nlf_01.util.RealHostname;
 import com.teragrep.rlo_14.Facility;
 import com.teragrep.rlo_14.SDElement;
 import com.teragrep.rlo_14.Severity;
@@ -57,7 +58,6 @@ import jakarta.json.JsonException;
 
 import java.time.Instant;
 import java.time.ZonedDateTime;
-import java.time.format.DateTimeParseException;
 import java.util.*;
 
 public final class DefaultPlugin implements Plugin {
@@ -67,7 +67,11 @@ public final class DefaultPlugin implements Plugin {
     private final String syslogAppname;
 
     public DefaultPlugin(final String realHostname, final String syslogHostname, final String syslogAppname) {
-        this.realHostname = realHostname;
+        this(new RealHostname(realHostname), syslogHostname, syslogAppname);
+    }
+
+    public DefaultPlugin(final RealHostname realHostname, final String syslogHostname, final String syslogAppname) {
+        this.realHostname = realHostname.hostname();
         this.syslogHostname = syslogHostname;
         this.syslogAppname = syslogAppname;
     }
@@ -75,16 +79,31 @@ public final class DefaultPlugin implements Plugin {
     @Override
     public List<SyslogMessage> syslogMessage(final ParsedEvent parsedEvent) {
         final List<SyslogMessage> syslogMessages = new ArrayList<>();
-        ZonedDateTime time;
-        boolean timeSet;
-        try {
-            time = parsedEvent.enqueuedTime().zonedDateTime();
-            timeSet = true;
+        ZonedDateTime enqueuedTime;
+        if (!parsedEvent.enqueuedTimeUtc().isStub()) {
+            enqueuedTime = parsedEvent.enqueuedTimeUtc().zonedDateTime();
         }
-        catch (DateTimeParseException ignored) {
-            time = ZonedDateTime.now();
-            timeSet = false;
+        else {
+            enqueuedTime = ZonedDateTime.now();
         }
+
+        String fullyQualifiedNamespace = "";
+        String eventHubName = "";
+        String partitionId = "";
+        String consumerGroup = "";
+        if (!parsedEvent.partitionCtx().isStub()) {
+            fullyQualifiedNamespace = String
+                    .valueOf(parsedEvent.partitionCtx().asMap().getOrDefault("FullyQualifiedNamespace", ""));
+            eventHubName = String.valueOf(parsedEvent.partitionCtx().asMap().getOrDefault("EventHubName", ""));
+            partitionId = String.valueOf(parsedEvent.partitionCtx().asMap().getOrDefault("PartitionId", ""));
+            consumerGroup = String.valueOf(parsedEvent.partitionCtx().asMap().getOrDefault("ConsumerGroup", ""));
+        }
+
+        final SDElement sdPartition = new SDElement("aer_02_partition@48577")
+                .addSDParam("fully_qualified_namespace", fullyQualifiedNamespace)
+                .addSDParam("eventhub_name", eventHubName)
+                .addSDParam("partition_id", partitionId)
+                .addSDParam("consumer_group", consumerGroup);
 
         final SDElement sdId = new SDElement("event_id@48577")
                 .addSDParam("uuid", UUID.randomUUID().toString())
@@ -92,26 +111,27 @@ public final class DefaultPlugin implements Plugin {
                 .addSDParam("unixtime", Instant.now().toString())
                 .addSDParam("id_source", "aer_02");
 
-        final SDElement sdPartition = new SDElement("aer_02_partition@48577")
-                .addSDParam(
-                        "fully_qualified_namespace",
-                        String.valueOf(parsedEvent.partitionContext().getOrDefault("FullyQualifiedNamespace", ""))
-                )
-                .addSDParam(
-                        "eventhub_name", String.valueOf(parsedEvent.partitionContext().getOrDefault("EventHubName", ""))
-                )
-                .addSDParam("partition_id", String.valueOf(parsedEvent.partitionContext().getOrDefault("PartitionId", ""))).addSDParam("consumer_group", String.valueOf(parsedEvent.partitionContext().getOrDefault("ConsumerGroup", "")));
+        String partitionKey = "";
+        if (!parsedEvent.systemProperties().isStub()) {
+            partitionKey = String.valueOf(parsedEvent.systemProperties().asMap().getOrDefault("PartitionKey", ""));
+        }
 
-        final String partitionKey = String.valueOf(parsedEvent.systemProperties().getOrDefault("PartitionKey", ""));
+        String offset = "";
+        if (!parsedEvent.offset().isStub()) {
+            offset = parsedEvent.offset().value();
+        }
 
         final SDElement sdEvent = new SDElement("aer_02_event@48577")
-                .addSDParam("offset", parsedEvent.offset() == null ? "" : parsedEvent.offset())
-                .addSDParam("enqueued_time", timeSet ? time.toInstant().toString() : "")
-                .addSDParam("partition_key", partitionKey == null ? "" : partitionKey)
+                .addSDParam("offset", offset)
+                .addSDParam(
+                        "enqueued_time",
+                        parsedEvent.enqueuedTimeUtc().isStub() ? "" : enqueuedTime.toInstant().toString()
+                )
+                .addSDParam("partition_key", partitionKey)
                 .addSDParam("properties", new PropertiesJson(parsedEvent.properties()).toJsonObject().toString());
 
         final SDElement sdComponentInfo = new SDElement("aer_02@48577")
-                .addSDParam("timestamp_source", timeSet ? "timeEnqueued" : "generated");
+                .addSDParam("timestamp_source", parsedEvent.enqueuedTimeUtc().isStub() ? "generated" : "timeEnqueued");
 
         List<String> records = new ArrayList<>();
         if (parsedEvent.isJsonStructure()) {
@@ -127,9 +147,14 @@ public final class DefaultPlugin implements Plugin {
             records.add(parsedEvent.asString());
         }
 
+        String seqNum = "";
+        if (!parsedEvent.systemProperties().isStub()) {
+            seqNum = String.valueOf(parsedEvent.systemProperties().asMap().getOrDefault("SequenceNumber", "0"));
+        }
+
         for (final String record : records) {
             syslogMessages
-                    .add(new SyslogMessage().withSeverity(Severity.INFORMATIONAL).withFacility(Facility.LOCAL0).withTimestamp(timeSet ? time.toInstant().toEpochMilli() : Instant.now().toEpochMilli()).withHostname(syslogHostname).withAppName(syslogAppname).withSDElement(sdId).withSDElement(sdPartition).withSDElement(sdEvent).withSDElement(sdComponentInfo).withMsgId(String.valueOf(parsedEvent.systemProperties().getOrDefault("SequenceNumber", "0"))).withMsg(record));
+                    .add(new SyslogMessage().withSeverity(Severity.INFORMATIONAL).withFacility(Facility.LOCAL0).withTimestamp(!parsedEvent.enqueuedTimeUtc().isStub() ? enqueuedTime.toInstant().toEpochMilli() : Instant.now().toEpochMilli()).withHostname(syslogHostname).withAppName(syslogAppname).withSDElement(sdId).withSDElement(sdPartition).withSDElement(sdEvent).withSDElement(sdComponentInfo).withMsgId(seqNum).withMsg(record));
         }
 
         return syslogMessages;

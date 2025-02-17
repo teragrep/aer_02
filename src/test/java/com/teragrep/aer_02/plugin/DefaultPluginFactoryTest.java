@@ -46,7 +46,13 @@
 package com.teragrep.aer_02.plugin;
 
 import com.teragrep.aer_02.SyslogBridge;
-import com.teragrep.akv_01.event.EventImpl;
+import com.teragrep.akv_01.event.ParsedEventFactory;
+import com.teragrep.akv_01.event.UnparsedEventImpl;
+import com.teragrep.akv_01.event.metadata.offset.EventOffsetImpl;
+import com.teragrep.akv_01.event.metadata.partitionContext.EventPartitionContextImpl;
+import com.teragrep.akv_01.event.metadata.properties.EventPropertiesImpl;
+import com.teragrep.akv_01.event.metadata.systemProperties.EventSystemPropertiesImpl;
+import com.teragrep.akv_01.event.metadata.time.EnqueuedTimeImpl;
 import com.teragrep.akv_01.plugin.Plugin;
 import com.teragrep.akv_01.plugin.PluginFactory;
 import com.teragrep.akv_01.plugin.PluginFactoryInitialization;
@@ -71,7 +77,16 @@ public final class DefaultPluginFactoryTest {
                 .assertDoesNotThrow(
                         () -> plugin
                                 .syslogMessage(
-                                        new EventImpl("msg", new HashMap<>(), new HashMap<>(), new HashMap<>(), now, "").parsedEvent()
+                                        new ParsedEventFactory(
+                                                new UnparsedEventImpl(
+                                                        "msg",
+                                                        new EventPartitionContextImpl(new HashMap<>()),
+                                                        new EventPropertiesImpl(new HashMap<>()),
+                                                        new EventSystemPropertiesImpl(new HashMap<>()),
+                                                        new EnqueuedTimeImpl(now),
+                                                        new EventOffsetImpl("")
+                                                )
+                                        ).parsedEvent()
                                 )
                 );
         Assertions.assertEquals(DefaultPlugin.class, plugin.getClass());

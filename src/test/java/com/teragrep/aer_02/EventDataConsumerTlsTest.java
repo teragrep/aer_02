@@ -53,8 +53,14 @@ import com.teragrep.aer_02.fakes.PartitionContextFake;
 import com.teragrep.aer_02.fakes.SystemPropsFake;
 import com.teragrep.aer_02.plugin.DefaultPluginFactory;
 import com.teragrep.aer_02.plugin.WrappedPluginFactoryWithConfig;
-import com.teragrep.akv_01.event.EventImpl;
 import com.teragrep.akv_01.event.ParsedEvent;
+import com.teragrep.akv_01.event.ParsedEventFactory;
+import com.teragrep.akv_01.event.UnparsedEventImpl;
+import com.teragrep.akv_01.event.metadata.offset.EventOffsetImpl;
+import com.teragrep.akv_01.event.metadata.partitionContext.EventPartitionContextImpl;
+import com.teragrep.akv_01.event.metadata.properties.EventPropertiesImpl;
+import com.teragrep.akv_01.event.metadata.systemProperties.EventSystemPropertiesImpl;
+import com.teragrep.akv_01.event.metadata.time.EnqueuedTimeImpl;
 import com.teragrep.akv_01.plugin.PluginFactoryConfigImpl;
 import com.teragrep.net_01.channel.socket.TLSFactory;
 import com.teragrep.net_01.eventloop.EventLoop;
@@ -220,9 +226,10 @@ public class EventDataConsumerTlsTest {
         List<String> enqueuedArray = Arrays.asList("2010-01-01T00:00:00", "2010-01-02T00:00:00", "2010-01-03T00:00:00");
 
         List<ParsedEvent> parsedEvents = new ArrayList<>();
+
         for (int i = 0; i < eventDatas.size(); i++) {
             parsedEvents
-                    .add(new EventImpl(eventDatas.get(i), pcf.asMap(), propsArray[i], sysPropsArray[i], enqueuedArray.get(i), offsets.get(i)).parsedEvent());
+                    .add(new ParsedEventFactory(new UnparsedEventImpl(eventDatas.get(i), new EventPartitionContextImpl(pcf.asMap()), new EventPropertiesImpl(propsArray[i]), new EventSystemPropertiesImpl(sysPropsArray[i]), new EnqueuedTimeImpl(enqueuedArray.get(i)), new EventOffsetImpl(offsets.get(i)))).parsedEvent());
         }
 
         edc.accept(parsedEvents);
