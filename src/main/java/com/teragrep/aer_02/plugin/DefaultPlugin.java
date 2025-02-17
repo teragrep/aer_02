@@ -62,7 +62,7 @@ import java.util.*;
 
 public final class DefaultPlugin implements Plugin {
 
-    private final RealHostname realHostname;
+    private final String realHostname;
     private final String syslogHostname;
     private final String syslogAppname;
 
@@ -71,7 +71,7 @@ public final class DefaultPlugin implements Plugin {
     }
 
     public DefaultPlugin(final RealHostname realHostname, final String syslogHostname, final String syslogAppname) {
-        this.realHostname = realHostname;
+        this.realHostname = realHostname.hostname();
         this.syslogHostname = syslogHostname;
         this.syslogAppname = syslogAppname;
     }
@@ -107,7 +107,7 @@ public final class DefaultPlugin implements Plugin {
 
         final SDElement sdId = new SDElement("event_id@48577")
                 .addSDParam("uuid", UUID.randomUUID().toString())
-                .addSDParam("hostname", realHostname.hostname())
+                .addSDParam("hostname", realHostname)
                 .addSDParam("unixtime", Instant.now().toString())
                 .addSDParam("id_source", "aer_02");
 
