@@ -51,7 +51,7 @@
     <dependency>
       <groupId>com.teragrep</groupId>
       <artifactId>nlf_01</artifactId>
-      <version>2.3.2</version>
+      <version>2.3.3</version>
     </dependency>
     <dependency>
       <groupId>com.teragrep</groupId>
@@ -603,6 +603,8 @@
           <environmentVariables>
             <RELP_CONNECTION_PORT>1601</RELP_CONNECTION_PORT>
             <METRICS_PROMETHEUSPORT>1701</METRICS_PROMETHEUSPORT>
+            <CONTAINERLOG_HOSTNAME_ANNOTATION>hostname</CONTAINERLOG_HOSTNAME_ANNOTATION>
+            <CONTAINERLOG_APPNAME_ANNOTATION>appName</CONTAINERLOG_APPNAME_ANNOTATION>
           </environmentVariables>
         </configuration>
       </plugin>
