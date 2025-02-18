@@ -147,7 +147,13 @@ public class SyslogBridge {
         }
         catch (Throwable t) {
             if (context.getLogger().isLoggable(Level.SEVERE)) {
-                context.getLogger().severe("Exiting because unexpected throwable was caught: <" + t + ">");
+                context
+                        .getLogger()
+                        .log(
+                                Level.SEVERE,
+                                "Exiting because unexpected throwable was caught with message <" + t.getMessage() + ">",
+                                t
+                        );
             }
             System.exit(1);
             throw t;
