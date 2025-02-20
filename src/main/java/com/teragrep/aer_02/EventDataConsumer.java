@@ -49,6 +49,7 @@ import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;
 import com.teragrep.aer_02.plugin.ParsedEventWithException;
 import com.teragrep.aer_02.plugin.WrappedPluginFactoryWithConfig;
+import com.teragrep.aer_02.records.EventRecords;
 import com.teragrep.akv_01.event.ParsedEvent;
 import com.teragrep.rlo_14.SDElement;
 import com.teragrep.rlo_14.SDParam;
@@ -92,44 +93,46 @@ final class EventDataConsumer {
     }
 
     public void accept(final List<ParsedEvent> parsedEvents) {
-        for (final ParsedEvent parsedEvent : parsedEvents) {
-            WrappedPluginFactoryWithConfig pluginFactoryWithConfig;
-            if (parsedEvent.isJsonStructure()) {
-                try {
-                    final String resourceId = parsedEvent.resourceId();
-                    pluginFactoryWithConfig = pluginFactories.getOrDefault(resourceId, defaultPluginFactory);
+        for (final ParsedEvent initialEvent : parsedEvents) {
+            for (final ParsedEvent parsedEvent : new EventRecords(initialEvent).records()) {
+                WrappedPluginFactoryWithConfig pluginFactoryWithConfig;
+                if (parsedEvent.isJsonStructure()) {
+                    try {
+                        final String resourceId = parsedEvent.resourceId();
+                        pluginFactoryWithConfig = pluginFactories.getOrDefault(resourceId, defaultPluginFactory);
+                    }
+                    catch (final JsonException ignored) {
+                        // no resourceId in json
+                        pluginFactoryWithConfig = defaultPluginFactory;
+                    }
                 }
-                catch (final JsonException ignored) {
-                    // no resourceId in json
+                else {
+                    // non-json event
                     pluginFactoryWithConfig = defaultPluginFactory;
                 }
-            }
-            else {
-                // non-json event
-                pluginFactoryWithConfig = defaultPluginFactory;
-            }
 
-            final Plugin plugin = pluginFactoryWithConfig
-                    .pluginFactory()
-                    .plugin(pluginFactoryWithConfig.pluginFactoryConfig().configPath());
+                final Plugin plugin = pluginFactoryWithConfig
+                        .pluginFactory()
+                        .plugin(pluginFactoryWithConfig.pluginFactoryConfig().configPath());
 
-            List<SyslogMessage> syslogMessages;
-            try {
-                syslogMessages = plugin.syslogMessage(parsedEvent);
-            }
-            catch (final PluginException e) {
+                List<SyslogMessage> syslogMessages;
                 try {
-                    syslogMessages = exceptionPluginFactory
-                            .pluginFactory()
-                            .plugin(exceptionPluginFactory.pluginFactoryConfig().configPath())
-                            .syslogMessage(new ParsedEventWithException(parsedEvent, e));
+                    syslogMessages = plugin.syslogMessage(parsedEvent);
                 }
-                catch (final PluginException e2) {
-                    throw new IllegalStateException("Exception plugin failed!", e2);
+                catch (final PluginException e) {
+                    try {
+                        syslogMessages = exceptionPluginFactory
+                                .pluginFactory()
+                                .plugin(exceptionPluginFactory.pluginFactoryConfig().configPath())
+                                .syslogMessage(new ParsedEventWithException(parsedEvent, e));
+                    }
+                    catch (final PluginException e2) {
+                        throw new IllegalStateException("Exception plugin failed!", e2);
+                    }
                 }
-            }
 
-            syslogMessages.forEach(this::sendToOutput);
+                syslogMessages.forEach(this::sendToOutput);
+            }
         }
     }
 

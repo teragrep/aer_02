@@ -264,6 +264,130 @@ public final class SyslogBridgeTest {
     }
 
     @Test
+    void testSyslogBridgeWithJsonRecordsDataAndUnknownTypes() {
+        // This should use the NLFPlugin, with the exception of the 2nd event of all 3 records
+        PartitionContextFake pcf = new PartitionContextFake("eventhub.123", "test1", "$Default", "0");
+        Map<String, Object> props = new HashMap<>();
+        final SyslogBridge bridge = new SyslogBridge();
+
+        final String jsonRecords = Json
+                .createObjectBuilder()
+                .add(
+                        "records",
+                        Json
+                                .createArrayBuilder()
+                                .add(Json.createObjectBuilder().add("TimeGenerated", "2020-01-01T00:00:00.000Z").add("_ResourceId", "/1/2/3/4/5/6/7/8").add("AppRoleName", "app-role-name").add("Type", "AppTraces")).add(Json.createObjectBuilder().add("TimeGenerated", "2021-01-01T00:00:00.000Z").add("_ResourceId", "/1/2/3/4/5/6/7/8").add("AppRoleName", "app-role-name").add("Type", "SomeUnknownType")).add(Json.createObjectBuilder().add("TimeGenerated", "2022-01-01T00:00:00.000Z").add("_ResourceId", "/1/2/3/4/5/6/7/8").add("AppRoleName", "app-role-name").add("Type", "AppTraces")).build()
+                )
+                .build()
+                .toString();
+
+        bridge.eventHubTriggerToSyslog(new String[] {
+                jsonRecords, jsonRecords, jsonRecords
+        }, pcf.asMap(), new Map[] {
+                props, props, props
+        }, new Map[] {
+                new SystemPropsFake("0").asMap(), new SystemPropsFake("1").asMap(), new SystemPropsFake("2").asMap()
+        }, Arrays.asList("2010-01-01T00:00:00", "2010-01-02T00:00:00", "2010-01-03T00:00:00"),
+                Arrays.asList("0", "1", "2"), new ExecutionContextFake()
+        );
+
+        // there are 3 JSON records-type events with 3 records each, totalling 9 messages
+        Assertions.assertEquals(9, messages.size());
+
+        final String[] expectedSeqNums = new String[] {
+                "0", "0", "0", "1", "1", "1", "2", "2", "2"
+        };
+
+        final String[] expectedMessages = new String[] {
+                "{\"TimeGenerated\":\"2020-01-01T00:00:00.000Z\",\"_ResourceId\":\"/1/2/3/4/5/6/7/8\",\"AppRoleName\":\"app-role-name\",\"Type\":\"AppTraces\"}",
+                "{\"TimeGenerated\":\"2021-01-01T00:00:00.000Z\",\"_ResourceId\":\"/1/2/3/4/5/6/7/8\",\"AppRoleName\":\"app-role-name\",\"Type\":\"SomeUnknownType\"}",
+                "{\"TimeGenerated\":\"2022-01-01T00:00:00.000Z\",\"_ResourceId\":\"/1/2/3/4/5/6/7/8\",\"AppRoleName\":\"app-role-name\",\"Type\":\"AppTraces\"}",
+
+                "{\"TimeGenerated\":\"2020-01-01T00:00:00.000Z\",\"_ResourceId\":\"/1/2/3/4/5/6/7/8\",\"AppRoleName\":\"app-role-name\",\"Type\":\"AppTraces\"}",
+                "{\"TimeGenerated\":\"2021-01-01T00:00:00.000Z\",\"_ResourceId\":\"/1/2/3/4/5/6/7/8\",\"AppRoleName\":\"app-role-name\",\"Type\":\"SomeUnknownType\"}",
+                "{\"TimeGenerated\":\"2022-01-01T00:00:00.000Z\",\"_ResourceId\":\"/1/2/3/4/5/6/7/8\",\"AppRoleName\":\"app-role-name\",\"Type\":\"AppTraces\"}",
+
+                "{\"TimeGenerated\":\"2020-01-01T00:00:00.000Z\",\"_ResourceId\":\"/1/2/3/4/5/6/7/8\",\"AppRoleName\":\"app-role-name\",\"Type\":\"AppTraces\"}",
+                "{\"TimeGenerated\":\"2021-01-01T00:00:00.000Z\",\"_ResourceId\":\"/1/2/3/4/5/6/7/8\",\"AppRoleName\":\"app-role-name\",\"Type\":\"SomeUnknownType\"}",
+                "{\"TimeGenerated\":\"2022-01-01T00:00:00.000Z\",\"_ResourceId\":\"/1/2/3/4/5/6/7/8\",\"AppRoleName\":\"app-role-name\",\"Type\":\"AppTraces\"}"
+        };
+
+        final String[] expectedHostnames = new String[] {
+                "md5-6f401cfe0a539a619fa9c17798d19925-8",
+                "localhost.localdomain",
+                "md5-6f401cfe0a539a619fa9c17798d19925-8",
+
+                "md5-6f401cfe0a539a619fa9c17798d19925-8",
+                "localhost.localdomain",
+                "md5-6f401cfe0a539a619fa9c17798d19925-8",
+
+                "md5-6f401cfe0a539a619fa9c17798d19925-8",
+                "localhost.localdomain",
+                "md5-6f401cfe0a539a619fa9c17798d19925-8"
+        };
+
+        final String[] expectedAppNames = new String[] {
+                "app-role-name",
+                "aer-02",
+                "app-role-name",
+
+                "app-role-name",
+                "aer-02",
+                "app-role-name",
+
+                "app-role-name",
+                "aer-02",
+                "app-role-name"
+        };
+
+        final String[] expectedProps = new String[] {
+                "{}",
+                "{\\\"aer-02-exception\\\":\\\"com.teragrep.akv_01.plugin.PluginException: java.lang.IllegalArgumentException: Invalid event type: SomeUnknownType\\\"}",
+                "{}",
+                "{}",
+                "{\\\"aer-02-exception\\\":\\\"com.teragrep.akv_01.plugin.PluginException: java.lang.IllegalArgumentException: Invalid event type: SomeUnknownType\\\"}",
+                "{}",
+                "{}",
+                "{\\\"aer-02-exception\\\":\\\"com.teragrep.akv_01.plugin.PluginException: java.lang.IllegalArgumentException: Invalid event type: SomeUnknownType\\\"}",
+                "{}",
+        };
+
+        int loops = 0;
+        for (String message : messages) {
+            final RFC5424Frame frame = new RFC5424Frame(false);
+            frame.load(new ByteArrayInputStream(message.getBytes(StandardCharsets.UTF_8)));
+            Assertions.assertTrue(Assertions.assertDoesNotThrow(frame::next));
+            Assertions.assertEquals(expectedMessages[loops], frame.msg.toString());
+            Assertions.assertEquals(expectedHostnames[loops], frame.hostname.toString());
+            Assertions.assertEquals(expectedAppNames[loops], frame.appName.toString());
+            Assertions.assertEquals(expectedSeqNums[loops], frame.msgId.toString());
+
+            final Map<String, Map<String, String>> sdElems = frame.structuredData.sdElements
+                    .stream()
+                    .collect(
+                            Collectors
+                                    .toMap(
+                                            (sde -> sde.sdElementId.toString()),
+                                            (sde -> sde.sdParams
+                                                    .stream()
+                                                    .collect(
+                                                            Collectors
+                                                                    .toMap(
+                                                                            sdp -> sdp.sdParamKey.toString(),
+                                                                            sdp -> sdp.sdParamValue.toString()
+                                                                    )
+                                                    ))
+                                    )
+                    );
+            Assertions.assertEquals(expectedProps[loops], sdElems.get("aer_02_event@48577").get("properties"));
+
+            loops++;
+        }
+
+        Assertions.assertEquals(9, loops);
+    }
+
+    @Test
     void testSyslogBridgeMetrics() {
         PartitionContextFake pcf = new PartitionContextFake("eventhub.123", "test1", "$Default", "0");
         Map<String, Object> props = new HashMap<>();
