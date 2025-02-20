@@ -153,8 +153,8 @@ public class EventRecordsTest {
                 )
         ).parsedEvent();
         EventRecords jr = new EventRecords(parsedEvent);
-        // MultiRecordEvent expects JsonObjects, not Strings
-        Assertions.assertThrows(ClassCastException.class, jr::records);
+        Assertions.assertEquals(1, jr.records().size());
+        Assertions.assertEquals(records.toString(), jr.records().get(0).asString());
     }
 
     @Test
