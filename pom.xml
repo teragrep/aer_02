@@ -51,7 +51,7 @@
     <dependency>
       <groupId>com.teragrep</groupId>
       <artifactId>nlf_01</artifactId>
-      <version>3.0.0</version>
+      <version>3.1.0</version>
     </dependency>
     <dependency>
       <groupId>com.teragrep</groupId>
@@ -605,6 +605,7 @@
             <METRICS_PROMETHEUSPORT>1701</METRICS_PROMETHEUSPORT>
             <CONTAINERLOG_HOSTNAME_ANNOTATION>hostname</CONTAINERLOG_HOSTNAME_ANNOTATION>
             <CONTAINERLOG_APPNAME_ANNOTATION>appName</CONTAINERLOG_APPNAME_ANNOTATION>
+            <SYSLOGTYPE_PROCESSNAME>Soft-Ware</SYSLOGTYPE_PROCESSNAME>
           </environmentVariables>
         </configuration>
       </plugin>
