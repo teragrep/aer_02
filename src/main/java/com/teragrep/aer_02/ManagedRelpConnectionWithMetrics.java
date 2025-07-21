@@ -72,10 +72,10 @@ public class ManagedRelpConnectionWithMetrics implements IManagedRelpConnection 
     private final Timer connectLatency;
 
     public ManagedRelpConnectionWithMetrics(
-            Logger logger,
-            IRelpConnection relpConnection,
-            String name,
-            MetricRegistry metricRegistry
+            final Logger logger,
+            final IRelpConnection relpConnection,
+            final String name,
+            final MetricRegistry metricRegistry
     ) {
         this(
                 logger,
@@ -88,12 +88,12 @@ public class ManagedRelpConnectionWithMetrics implements IManagedRelpConnection 
     }
 
     public ManagedRelpConnectionWithMetrics(
-            Logger logger,
-            IRelpConnection relpConnection,
-            String name,
-            MetricRegistry metricRegistry,
-            Reservoir sendReservoir,
-            Reservoir connectReservoir
+            final Logger logger,
+            final IRelpConnection relpConnection,
+            final String name,
+            final MetricRegistry metricRegistry,
+            final Reservoir sendReservoir,
+            final Reservoir connectReservoir
     ) {
         this.logger = logger;
         this.relpConnection = relpConnection;
@@ -165,7 +165,7 @@ public class ManagedRelpConnectionWithMetrics implements IManagedRelpConnection 
     }
 
     @Override
-    public void ensureSent(byte[] bytes) {
+    public void ensureSent(final byte[] bytes) {
         try (final Timer.Context context = sendLatency.time()) {
             // avoid unnecessary exception for fresh connections
             if (!hasConnected) {
