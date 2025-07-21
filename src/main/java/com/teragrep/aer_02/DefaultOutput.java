@@ -60,11 +60,11 @@ import java.util.logging.Logger;
 public final class DefaultOutput implements Output {
 
     DefaultOutput(
-            Logger logger,
-            String name,
-            RelpConnectionConfig relpConnectionConfig,
-            MetricRegistry metricRegistry,
-            SSLContextSupplier sslContextSupplier
+            final Logger logger,
+            final String name,
+            final RelpConnectionConfig relpConnectionConfig,
+            final MetricRegistry metricRegistry,
+            final SSLContextSupplier sslContextSupplier
     ) {
         this(
                 logger,
@@ -82,7 +82,7 @@ public final class DefaultOutput implements Output {
         );
     }
 
-    DefaultOutput(Logger logger, Pool<IManagedRelpConnection> relpConnectionPool) {
+    DefaultOutput(final Logger logger, final Pool<IManagedRelpConnection> relpConnectionPool) {
         this.relpConnectionPool = relpConnectionPool;
         logger.info("DefaultOutput constructor done");
     }
@@ -90,8 +90,8 @@ public final class DefaultOutput implements Output {
     private final Pool<IManagedRelpConnection> relpConnectionPool;
 
     @Override
-    public void accept(RelpBatch relpBatch) {
-        IManagedRelpConnection connection = relpConnectionPool.get();
+    public void accept(final RelpBatch relpBatch) {
+        final IManagedRelpConnection connection = relpConnectionPool.get();
         connection.ensureSent(relpBatch);
         relpConnectionPool.offer(connection);
     }
