@@ -60,7 +60,7 @@ public final class PropertySource implements Sourceable {
     }
 
     @Override
-    public String source(String name, String defaultValue) {
+    public String source(final String name, final String defaultValue) {
         LOGGER.debug("sourcing property name <[{}]>", name);
         String rv = properties.getProperty(name, defaultValue);
         LOGGER.debug("sourced value <[{}]> for property name <[{}]>", rv, name);
