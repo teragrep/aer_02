@@ -71,10 +71,10 @@ public final class ManagedRelpConnectionWithMetrics implements IManagedRelpConne
     private final Timer connectLatency;
 
     public ManagedRelpConnectionWithMetrics(
-            Logger logger,
-            IRelpConnection relpConnection,
-            String name,
-            MetricRegistry metricRegistry
+            final Logger logger,
+            final IRelpConnection relpConnection,
+            final String name,
+            final MetricRegistry metricRegistry
     ) {
         this(
                 logger,
@@ -87,12 +87,12 @@ public final class ManagedRelpConnectionWithMetrics implements IManagedRelpConne
     }
 
     public ManagedRelpConnectionWithMetrics(
-            Logger logger,
-            IRelpConnection relpConnection,
-            String name,
-            MetricRegistry metricRegistry,
-            Reservoir sendReservoir,
-            Reservoir connectReservoir
+            final Logger logger,
+            final IRelpConnection relpConnection,
+            final String name,
+            final MetricRegistry metricRegistry,
+            final Reservoir sendReservoir,
+            final Reservoir connectReservoir
     ) {
         this.logger = logger;
         this.relpConnection = relpConnection;
@@ -163,8 +163,8 @@ public final class ManagedRelpConnectionWithMetrics implements IManagedRelpConne
     }
 
     @Override
-    public void ensureSent(RelpBatch relpBatch) {
-        long numRecords = relpBatch.getWorkQueueLength();
+    public void ensureSent(final RelpBatch relpBatch) {
+        final long numRecords = relpBatch.getWorkQueueLength();
         try (final Timer.Context context = sendLatency.time()) {
             // avoid unnecessary exception for fresh connections
             if (!hasConnected) {
