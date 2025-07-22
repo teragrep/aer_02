@@ -61,7 +61,6 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 import static com.codahale.metrics.MetricRegistry.name;
@@ -69,7 +68,6 @@ import static com.codahale.metrics.MetricRegistry.name;
 final class EventDataConsumer {
 
     // Note: Checkpointing is handled automatically.
-    private final Logger logger;
     private final Output output;
     private final Map<String, WrappedPluginFactoryWithConfig> pluginFactories;
     private final MetricRegistry metricRegistry;
@@ -77,14 +75,12 @@ final class EventDataConsumer {
     private final WrappedPluginFactoryWithConfig exceptionPluginFactory;
 
     EventDataConsumer(
-            final Logger logger,
             final Output output,
             final Map<String, WrappedPluginFactoryWithConfig> pluginFactories,
             final WrappedPluginFactoryWithConfig defaultPluginFactory,
             final WrappedPluginFactoryWithConfig exceptionPluginFactory,
             final MetricRegistry metricRegistry
     ) {
-        this.logger = logger;
         this.metricRegistry = metricRegistry;
         this.pluginFactories = pluginFactories;
         this.exceptionPluginFactory = exceptionPluginFactory;
