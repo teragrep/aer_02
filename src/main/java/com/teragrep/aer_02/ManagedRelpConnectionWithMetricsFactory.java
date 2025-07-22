@@ -47,7 +47,17 @@ package com.teragrep.aer_02;
 
 import com.codahale.metrics.MetricRegistry;
 import com.teragrep.rlp_01.RelpConnection;
-import com.teragrep.rlp_01.client.*;
+import com.teragrep.rlp_01.client.IManagedRelpConnection;
+import com.teragrep.rlp_01.client.IRelpConnection;
+import com.teragrep.rlp_01.client.RebindableRelpConnection;
+import com.teragrep.rlp_01.client.RelpConfig;
+import com.teragrep.rlp_01.client.RelpConnectionWithConfig;
+import com.teragrep.rlp_01.client.RenewableRelpConnection;
+import com.teragrep.rlp_01.client.SSLContextSupplier;
+import com.teragrep.rlp_01.client.SSLContextSupplierStub;
+import com.teragrep.rlp_01.client.SocketConfig;
+import com.teragrep.rlp_01.client.SocketConfigDefault;
+
 import java.util.logging.Logger;
 
 import java.util.function.Supplier;
