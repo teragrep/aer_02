@@ -52,7 +52,7 @@ import java.util.logging.Logger;
 
 import java.util.function.Supplier;
 
-public class ManagedRelpConnectionWithMetricsFactory implements Supplier<IManagedRelpConnection> {
+public final class ManagedRelpConnectionWithMetricsFactory implements Supplier<IManagedRelpConnection> {
 
     private final RelpConfig relpConfig;
     private final SocketConfig socketConfig;
