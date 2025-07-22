@@ -71,7 +71,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Logger;
 
 import static com.codahale.metrics.MetricRegistry.name;
 
@@ -90,7 +89,6 @@ public class EventDataConsumerTest {
         systemProps.put("SequenceNumber", "1");
         MetricRegistry metricRegistry = new MetricRegistry();
         EventDataConsumer eventDataConsumer = new EventDataConsumer(
-                Logger.getAnonymousLogger(),
                 new OutputFake(),
                 new HashMap<>(),
                 new WrappedPluginFactoryWithConfig(

@@ -125,7 +125,6 @@ public class SyslogBridge {
                     .exceptionPluginFactory();
 
             final EventDataConsumer consumer = new EventDataConsumer(
-                    context.getLogger(),
                     defaultOutput,
                     pluginFactories,
                     defaultPluginFactory,
