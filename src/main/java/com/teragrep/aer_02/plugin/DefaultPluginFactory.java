@@ -58,9 +58,7 @@ public final class DefaultPluginFactory implements PluginFactory {
     @Override
     public synchronized Plugin plugin(final String json) {
         final JsonObject jsonObject;
-        try (
-                final StringReader stringReader = new StringReader(json); final JsonReader reader = Json.createReader(stringReader)
-        ) {
+        try (StringReader stringReader = new StringReader(json); JsonReader reader = Json.createReader(stringReader)) {
             jsonObject = reader.readObject();
         }
         return new DefaultPlugin(

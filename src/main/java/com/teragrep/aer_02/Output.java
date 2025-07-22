@@ -49,5 +49,5 @@ import java.util.function.Consumer;
 
 public interface Output extends Consumer<byte[]>, AutoCloseable {
 
-    public abstract void close();
+    void close();
 }
