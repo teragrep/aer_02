@@ -54,7 +54,7 @@ import java.io.IOException;
 import java.security.*;
 import java.security.cert.CertificateException;
 
-public class AzureSSLContextSupplier implements SSLContextSupplier {
+public final class AzureSSLContextSupplier implements SSLContextSupplier {
 
     @Override
     public SSLContext get() {

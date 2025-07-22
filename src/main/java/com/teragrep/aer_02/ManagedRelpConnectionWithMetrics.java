@@ -56,7 +56,7 @@ import java.util.logging.Logger;
 
 import static com.codahale.metrics.MetricRegistry.name;
 
-public class ManagedRelpConnectionWithMetrics implements IManagedRelpConnection {
+public final class ManagedRelpConnectionWithMetrics implements IManagedRelpConnection {
 
     private final Logger logger;
     private final IRelpConnection relpConnection;
