@@ -195,7 +195,6 @@ public class EventDataConsumerTlsTest {
         );
 
         final EventDataConsumer edc = new EventDataConsumer(
-                Logger.getAnonymousLogger(),
                 output,
                 new HashMap<>(),
                 new WrappedPluginFactoryWithConfig(
