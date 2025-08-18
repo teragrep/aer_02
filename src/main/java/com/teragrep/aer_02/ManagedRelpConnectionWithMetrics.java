@@ -166,7 +166,7 @@ public class ManagedRelpConnectionWithMetrics implements IManagedRelpConnection 
 
     @Override
     public void ensureSent(byte[] bytes) {
-        try (final Timer.Context context = sendLatency.time()) {
+        try (Timer.Context ignored = sendLatency.time()) {
             // avoid unnecessary exception for fresh connections
             if (!hasConnected) {
                 connect();
