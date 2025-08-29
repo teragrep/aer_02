@@ -46,7 +46,9 @@
 package com.teragrep.aer_02.plugin;
 
 import com.teragrep.aer_02.config.SyslogConfig;
-import com.teragrep.akv_01.plugin.*;
+import com.teragrep.akv_01.plugin.PluginFactoryConfig;
+import com.teragrep.akv_01.plugin.PluginFactoryConfigImpl;
+import com.teragrep.akv_01.plugin.PluginFactoryInitialization;
 import jakarta.json.Json;
 
 import java.lang.reflect.InvocationTargetException;
