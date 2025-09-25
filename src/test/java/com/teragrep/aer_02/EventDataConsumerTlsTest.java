@@ -83,7 +83,6 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
-import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -207,11 +206,7 @@ public class EventDataConsumerTlsTest {
         int numberOfEvents = 3;
         List<ParsedEvent> parsedEvents = fakeParsedEventSource.create(numberOfEvents, 1);
 
-        System.out.println("ingestion start at " + Instant.now());
-
         edc.accept(parsedEvents);
-
-        System.out.println("ingestion end at " + Instant.now());
 
         Assertions.assertEquals(numberOfEvents, messages.size());
 
@@ -227,8 +222,6 @@ public class EventDataConsumerTlsTest {
         }
 
         Assertions.assertEquals(numberOfEvents, loops);
-
-        System.out.println("verification end at " + Instant.now());
 
     }
 
