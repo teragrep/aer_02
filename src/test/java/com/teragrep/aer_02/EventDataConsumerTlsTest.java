@@ -204,7 +204,7 @@ public class EventDataConsumerTlsTest {
 
         FakeParsedEventSource fakeParsedEventSource = new FakeParsedEventSource();
         int numberOfEvents = 3;
-        List<ParsedEvent> parsedEvents = fakeParsedEventSource.create(numberOfEvents, 1);
+        List<ParsedEvent> parsedEvents = fakeParsedEventSource.parsedEvents(numberOfEvents, 1);
 
         edc.accept(parsedEvents);
 

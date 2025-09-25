@@ -65,7 +65,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-public class FakeParsedEventSource {
+public final class FakeParsedEventSource {
 
     private final PartitionContextFake partitionContextFake;
 
@@ -77,7 +77,7 @@ public class FakeParsedEventSource {
         this.partitionContextFake = partitionContextFake;
     }
 
-    public List<ParsedEvent> create(int numberOfEvents, int eventSizeIncrement) {
+    public List<ParsedEvent> parsedEvents(int numberOfEvents, int eventSizeIncrement) {
         DateTimeFormatter enqueuedTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
         LocalDateTime startEnqueuedTime = LocalDateTime
                 .parse("2010-01-01T00:00:00", DateTimeFormatter.ISO_LOCAL_DATE_TIME);
@@ -87,7 +87,7 @@ public class FakeParsedEventSource {
             String payload = "x".repeat(eventSizeIncrement) + "_event_" + i;
 
             EnqueuedTime enqueuedTimeUtc = new EnqueuedTimeImpl(
-                    startEnqueuedTime.plusSeconds(1).format(enqueuedTimeFormatter)
+                    startEnqueuedTime.plusSeconds(i).format(enqueuedTimeFormatter)
             );
 
             Map<String, Object> propertiesMap = Collections.emptyMap();
