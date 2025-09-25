@@ -69,6 +69,7 @@ public final class FakeParsedEventSourceTest {
         LocalDateTime startEnqueuedTime = LocalDateTime
                 .parse("2010-01-01T00:00:00", DateTimeFormatter.ISO_LOCAL_DATE_TIME);
 
+        int loops = 0;
         for (int eventNumber = 0; eventNumber < numberOfEvents; eventNumber++) {
             Assertions
                     .assertEquals(startEnqueuedTime.plusSeconds(eventNumber).format(enqueuedTimeFormatter), parsedEvents.get(eventNumber).enqueuedTimeUtc().toString());
@@ -83,8 +84,9 @@ public final class FakeParsedEventSourceTest {
             Assertions
                     .assertEquals("$Default", parsedEvents.get(eventNumber).partitionCtx().asMap().get("ConsumerGroup"));
             Assertions.assertFalse(parsedEvents.get(eventNumber).isJsonStructure());
-
+            loops++;
         }
+        Assertions.assertEquals(numberOfEvents, loops);
     }
 
 }
