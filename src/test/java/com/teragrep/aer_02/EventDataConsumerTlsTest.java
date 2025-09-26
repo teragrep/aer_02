@@ -49,18 +49,9 @@ import com.codahale.metrics.MetricRegistry;
 import com.teragrep.aer_02.config.RelpConnectionConfig;
 import com.teragrep.aer_02.config.source.EnvironmentSource;
 import com.teragrep.aer_02.config.source.Sourceable;
-import com.teragrep.aer_02.fakes.PartitionContextFake;
-import com.teragrep.aer_02.fakes.SystemPropsFake;
 import com.teragrep.aer_02.plugin.DefaultPluginFactory;
 import com.teragrep.aer_02.plugin.WrappedPluginFactoryWithConfig;
 import com.teragrep.akv_01.event.ParsedEvent;
-import com.teragrep.akv_01.event.ParsedEventFactory;
-import com.teragrep.akv_01.event.UnparsedEventImpl;
-import com.teragrep.akv_01.event.metadata.offset.EventOffsetImpl;
-import com.teragrep.akv_01.event.metadata.partitionContext.EventPartitionContextImpl;
-import com.teragrep.akv_01.event.metadata.properties.EventPropertiesImpl;
-import com.teragrep.akv_01.event.metadata.systemProperties.EventSystemPropertiesImpl;
-import com.teragrep.akv_01.event.metadata.time.EnqueuedTimeImpl;
 import com.teragrep.akv_01.plugin.PluginFactoryConfigImpl;
 import com.teragrep.net_01.channel.socket.TLSFactory;
 import com.teragrep.net_01.eventloop.EventLoop;
@@ -211,28 +202,13 @@ public class EventDataConsumerTlsTest {
                 metricRegistry
         );
 
-        // Fake data
-        PartitionContextFake pcf = new PartitionContextFake("eventhub.123", "test1", "$Default", "0");
-        Map<String, Object> props = new HashMap<>();
-        List<String> eventDatas = Arrays.asList("event0", "event1", "event2");
-        Map[] propsArray = new Map[] {
-                props, props, props
-        };
-        Map[] sysPropsArray = new Map[] {
-                new SystemPropsFake("0").asMap(), new SystemPropsFake("1").asMap(), new SystemPropsFake("2").asMap()
-        };
-        List<String> offsets = Arrays.asList("0", "1", "2");
-        List<String> enqueuedArray = Arrays.asList("2010-01-01T00:00:00", "2010-01-02T00:00:00", "2010-01-03T00:00:00");
-
-        List<ParsedEvent> parsedEvents = new ArrayList<>();
-
-        for (int i = 0; i < eventDatas.size(); i++) {
-            parsedEvents
-                    .add(new ParsedEventFactory(new UnparsedEventImpl(eventDatas.get(i), new EventPartitionContextImpl(pcf.asMap()), new EventPropertiesImpl(propsArray[i]), new EventSystemPropertiesImpl(sysPropsArray[i]), new EnqueuedTimeImpl(enqueuedArray.get(i)), new EventOffsetImpl(offsets.get(i)))).parsedEvent());
-        }
+        FakeParsedEventSource fakeParsedEventSource = new FakeParsedEventSource();
+        int numberOfEvents = 3;
+        List<ParsedEvent> parsedEvents = fakeParsedEventSource.parsedEvents(numberOfEvents, 1);
 
         edc.accept(parsedEvents);
-        Assertions.assertEquals(3, messages.size());
+
+        Assertions.assertEquals(numberOfEvents, messages.size());
 
         int loops = 0;
         for (String message : messages) {
@@ -245,7 +221,8 @@ public class EventDataConsumerTlsTest {
             loops++;
         }
 
-        Assertions.assertEquals(3, loops);
+        Assertions.assertEquals(numberOfEvents, loops);
+
     }
 
     private static class InternalSSLContextFactory {
