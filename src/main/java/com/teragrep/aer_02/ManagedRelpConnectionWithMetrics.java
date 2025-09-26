@@ -64,7 +64,6 @@ public class ManagedRelpConnectionWithMetrics implements IManagedRelpConnection 
 
     // metrics
     private final Counter records;
-    private final Counter bytesCnt;
     private final Counter resends;
     private final Counter connects;
     private final Counter retriedConnects;
@@ -99,7 +98,6 @@ public class ManagedRelpConnectionWithMetrics implements IManagedRelpConnection 
         this.relpConnection = relpConnection;
 
         this.records = metricRegistry.counter(name(DefaultOutput.class, "<[" + name + "]>", "records"));
-        this.bytesCnt = metricRegistry.counter(name(DefaultOutput.class, "<[" + name + "]>", "bytes"));
         this.resends = metricRegistry.counter(name(DefaultOutput.class, "<[" + name + "]>", "resends"));
         this.connects = metricRegistry.counter(name(DefaultOutput.class, "<[" + name + "]>", "connects"));
         this.retriedConnects = metricRegistry.counter(name(DefaultOutput.class, "<[" + name + "]>", "retriedConnects"));
@@ -165,22 +163,20 @@ public class ManagedRelpConnectionWithMetrics implements IManagedRelpConnection 
     }
 
     @Override
-    public void ensureSent(byte[] bytes) {
+    public void ensureSent(RelpBatch relpBatch) {
+        long numRecords = relpBatch.getWorkQueueLength();
         try (final Timer.Context context = sendLatency.time()) {
             // avoid unnecessary exception for fresh connections
             if (!hasConnected) {
                 connect();
             }
 
-            final RelpBatch relpBatch = new RelpBatch();
-            relpBatch.insert(bytes);
             boolean notSent = true;
             while (notSent) {
                 try {
                     relpConnection.commit(relpBatch);
 
-                    records.inc(1);
-                    bytesCnt.inc(bytes.length);
+                    records.inc(numRecords);
                 }
                 catch (IllegalStateException | IOException | TimeoutException e) {
                     logger.warning("Exception <" + e.getMessage() + "> while sending relpBatch. Will retry");
@@ -196,6 +192,13 @@ public class ManagedRelpConnectionWithMetrics implements IManagedRelpConnection 
                 }
             }
         }
+    }
+
+    @Override
+    public void ensureSent(final byte[] bytes) {
+        final RelpBatch relpBatch = new RelpBatch();
+        relpBatch.insert(bytes);
+        ensureSent(relpBatch);
     }
 
     @Override

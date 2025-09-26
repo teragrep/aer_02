@@ -449,7 +449,7 @@ public final class SyslogBridgeTest {
         HttpResponseMessage resp = bridge.metrics(req, new ExecutionContextFake());
         List<String> responseLines = Arrays.asList(resp.getBody().toString().split("\n"));
 
-        Assertions.assertEquals(36, responseLines.size());
+        Assertions.assertEquals(33, responseLines.size());
         // Check all metrics are present
         Assertions
                 .assertTrue(
@@ -481,10 +481,6 @@ public final class SyslogBridgeTest {
                 .assertTrue(
                         responseLines
                                 .contains("# TYPE com_teragrep_aer_02_DefaultOutput___defaultOutput___records gauge")
-                );
-        Assertions
-                .assertTrue(
-                        responseLines.contains("# TYPE com_teragrep_aer_02_DefaultOutput___defaultOutput___bytes gauge")
                 );
         Assertions
                 .assertTrue(

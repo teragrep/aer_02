@@ -51,6 +51,7 @@ import com.codahale.metrics.Timer;
 import com.teragrep.aer_02.config.RelpConnectionConfig;
 import com.teragrep.aer_02.config.source.PropertySource;
 import com.teragrep.aer_02.fakes.ConnectionlessRelpConnectionFake;
+import com.teragrep.rlp_01.RelpBatch;
 import com.teragrep.rlp_01.client.ManagedRelpConnectionStub;
 import com.teragrep.aer_02.fakes.RelpConnectionFake;
 import com.teragrep.aer_02.fakes.ThrowingRelpConnectionFake;
@@ -105,9 +106,12 @@ public class DefaultOutputTest {
         DefaultOutput output = new DefaultOutput(Logger.getAnonymousLogger(), pool);
 
         try {
-            for (int i = 0; i < measurementLimit + 100; i++) { // send more messages than the limit is
-                output.accept(syslogMessage.toRfc5424SyslogMessage().getBytes(StandardCharsets.UTF_8));
+            for (int i = 0; i < measurementLimit + 100; i++) {
+                RelpBatch relpBatch = new RelpBatch();
+                relpBatch.insert(syslogMessage.toRfc5424SyslogMessage().getBytes(StandardCharsets.UTF_8));
+                output.accept(relpBatch);
             }
+            // send more messages than the limit is
         }
         finally {
             output.close();
@@ -146,7 +150,9 @@ public class DefaultOutputTest {
         DefaultOutput output = new DefaultOutput(Logger.getAnonymousLogger(), pool);
 
         try {
-            output.accept(syslogMessage.toRfc5424SyslogMessage().getBytes(StandardCharsets.UTF_8));
+            RelpBatch relpBatch = new RelpBatch();
+            relpBatch.insert(syslogMessage.toRfc5424SyslogMessage().getBytes(StandardCharsets.UTF_8));
+            output.accept(relpBatch);
         }
         finally {
             output.close();
@@ -182,7 +188,9 @@ public class DefaultOutputTest {
         DefaultOutput output = new DefaultOutput(Logger.getAnonymousLogger(), pool);
 
         try {
-            output.accept(syslogMessage.toRfc5424SyslogMessage().getBytes(StandardCharsets.UTF_8));
+            RelpBatch relpBatch = new RelpBatch();
+            relpBatch.insert(syslogMessage.toRfc5424SyslogMessage().getBytes(StandardCharsets.UTF_8));
+            output.accept(relpBatch);
         }
         finally {
             output.close();

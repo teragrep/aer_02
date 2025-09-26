@@ -45,9 +45,11 @@
  */
 package com.teragrep.aer_02;
 
+import com.teragrep.rlp_01.RelpBatch;
+
 import java.util.function.Consumer;
 
-public interface Output extends Consumer<byte[]>, AutoCloseable {
+public interface Output extends Consumer<RelpBatch>, AutoCloseable {
 
     public abstract void close();
 }
