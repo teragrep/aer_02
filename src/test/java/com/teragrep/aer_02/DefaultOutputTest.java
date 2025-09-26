@@ -106,12 +106,11 @@ public class DefaultOutputTest {
         DefaultOutput output = new DefaultOutput(Logger.getAnonymousLogger(), pool);
 
         try {
-            for (int i = 0; i < measurementLimit + 100; i++) {
+            for (int i = 0; i < measurementLimit + 100; i++) { // send more messages than the limit is
                 RelpBatch relpBatch = new RelpBatch();
                 relpBatch.insert(syslogMessage.toRfc5424SyslogMessage().getBytes(StandardCharsets.UTF_8));
                 output.accept(relpBatch);
             }
-            // send more messages than the limit is
         }
         finally {
             output.close();
