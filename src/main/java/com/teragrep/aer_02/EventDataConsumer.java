@@ -55,6 +55,7 @@ import com.teragrep.rlo_14.SDElement;
 import com.teragrep.rlo_14.SDParam;
 import com.teragrep.rlo_14.SyslogMessage;
 import com.teragrep.akv_01.plugin.*;
+import com.teragrep.rlp_01.RelpBatch;
 import jakarta.json.JsonException;
 
 import java.nio.charset.StandardCharsets;
@@ -127,36 +128,43 @@ final class EventDataConsumer {
                     }
                 }
 
-                syslogMessages.forEach(this::sendToOutput);
+                sendToOutput(syslogMessages);
             }
         }
     }
 
-    private void sendToOutput(final SyslogMessage syslogMessage) {
-        final List<SDElement> partitionElements = syslogMessage
-                .getSDElements()
-                .stream()
-                .filter(sdElement -> sdElement.getSdID().equals("aer_02_partition@48577"))
-                .collect(Collectors.toList());
-        if (partitionElements.isEmpty()) {
-            throw new IllegalStateException("SDElement aer_02_partition@48577 not found");
+    private void sendToOutput(final List<SyslogMessage> syslogMessages) {
+
+        RelpBatch relpBatch = new RelpBatch();
+
+        for (final SyslogMessage syslogMessage : syslogMessages) {
+            final List<SDElement> partitionElements = syslogMessage
+                    .getSDElements()
+                    .stream()
+                    .filter(sdElement -> sdElement.getSdID().equals("aer_02_partition@48577"))
+                    .collect(Collectors.toList());
+            if (partitionElements.isEmpty()) {
+                throw new IllegalStateException("SDElement aer_02_partition@48577 not found");
+            }
+
+            final List<SDParam> partitionParams = partitionElements
+                    .get(0)
+                    .getSdParams()
+                    .stream()
+                    .filter(sdParam -> sdParam.getParamName().equals("partition_id"))
+                    .collect(Collectors.toList());
+            if (partitionParams.isEmpty()) {
+                throw new IllegalStateException("SDParam partition_id not found in SDElement aer_02_partition@48577");
+            }
+
+            final long timestampSecs = Instant.parse(syslogMessage.getTimestamp()).toEpochMilli() / 1000L;
+
+            metricRegistry
+                    .gauge(name(EventDataConsumer.class, "latency-seconds", partitionParams.get(0).getParamValue()), () -> (Gauge<Long>) () -> Instant.now().getEpochSecond() - timestampSecs);
+
+            relpBatch.insert(syslogMessage.toRfc5424SyslogMessage().getBytes(StandardCharsets.UTF_8));
         }
 
-        final List<SDParam> partitionParams = partitionElements
-                .get(0)
-                .getSdParams()
-                .stream()
-                .filter(sdParam -> sdParam.getParamName().equals("partition_id"))
-                .collect(Collectors.toList());
-        if (partitionParams.isEmpty()) {
-            throw new IllegalStateException("SDParam partition_id not found in SDElement aer_02_partition@48577");
-        }
-
-        final long timestampSecs = Instant.parse(syslogMessage.getTimestamp()).toEpochMilli() / 1000L;
-
-        metricRegistry
-                .gauge(name(EventDataConsumer.class, "latency-seconds", partitionParams.get(0).getParamValue()), () -> (Gauge<Long>) () -> Instant.now().getEpochSecond() - timestampSecs);
-
-        output.accept(syslogMessage.toRfc5424SyslogMessage().getBytes(StandardCharsets.UTF_8));
+        output.accept(relpBatch);
     }
 }
