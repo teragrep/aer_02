@@ -92,7 +92,7 @@ public class SyslogBridge {
     }
 
     @FunctionName("eventHubTriggerToSyslog")
-    public void eventHubTriggerToSyslog(
+    public synchronized void eventHubTriggerToSyslog(
             @EventHubTrigger(
                     name = "event",
                     /* Name of the EVENT HUB, not the app setting. Wrapping value in %'s makes it an environment variable.
