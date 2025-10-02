@@ -113,13 +113,13 @@ public class SyslogBridge {
         try {
             if (context.getLogger().isLoggable(Level.FINE)) {
                 long sekvenssiCount = 0;
-                for (String event : events) {
+                for (final String event : events) {
                     if (event.matches(".*sekvenssi_daemonset_.*")) {
                         sekvenssiCount++;
                     }
                 }
 
-                context.getLogger().fine("sekvenssi_daemonset_ count: " + sekvenssiCount);
+                context.getLogger().fine("sekvenssi_daemonset_ sekvenssiCount <" + sekvenssiCount + ">");
             }
 
             if (context.getLogger().isLoggable(Level.FINE)) {
