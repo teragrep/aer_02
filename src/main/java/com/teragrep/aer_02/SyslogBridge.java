@@ -112,6 +112,17 @@ public class SyslogBridge {
     ) {
         try {
             if (context.getLogger().isLoggable(Level.FINE)) {
+                long sekvenssiCount = 0;
+                for (final String event : events) {
+                    if (event.matches(".*sekvenssi_daemonset_.*")) {
+                        sekvenssiCount++;
+                    }
+                }
+
+                context.getLogger().fine("sekvenssi_daemonset_ sekvenssiCount <" + sekvenssiCount + ">");
+            }
+
+            if (context.getLogger().isLoggable(Level.FINE)) {
                 context.getLogger().fine("eventHubTriggerToSyslog triggered");
                 context.getLogger().fine("Got events: <[" + events.length + "]>");
             }
