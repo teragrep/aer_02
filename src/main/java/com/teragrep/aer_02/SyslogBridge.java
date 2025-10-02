@@ -122,7 +122,6 @@ public class SyslogBridge {
                 context.getLogger().fine("sekvenssi_daemonset_ count: " + sekvenssiCount);
             }
 
-
             if (context.getLogger().isLoggable(Level.FINE)) {
                 context.getLogger().fine("eventHubTriggerToSyslog triggered");
                 context.getLogger().fine("Got events: <[" + events.length + "]>");
