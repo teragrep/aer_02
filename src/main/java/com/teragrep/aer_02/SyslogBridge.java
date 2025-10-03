@@ -116,6 +116,9 @@ public class SyslogBridge {
                 for (final String event : events) {
                     if (event.matches(".*sekvenssi_daemonset_.*")) {
                         sekvenssiCount++;
+                        if (context.getLogger().isLoggable(Level.FINER)) {
+                            context.getLogger().finer("sekvenssi_daemonset_ event <[" + event + "]>");
+                        }
                     }
                 }
 
