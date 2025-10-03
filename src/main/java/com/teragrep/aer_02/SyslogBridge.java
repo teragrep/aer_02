@@ -72,7 +72,7 @@ public class SyslogBridge {
                     methods = {
                             HttpMethod.GET, HttpMethod.POST
                     },
-                    authLevel = AuthorizationLevel.FUNCTION
+                    authLevel = AuthorizationLevel.ANONYMOUS
             ) HttpRequestMessage<Optional<String>> request,
             final ExecutionContext context
     ) {
