@@ -98,6 +98,7 @@ public class SyslogBridge {
                     /* Name of the EVENT HUB, not the app setting. Wrapping value in %'s makes it an environment variable.
                      * This makes it configurable in app settings. */
                     eventHubName = "%EventHubName%",
+                    consumerGroup = "%consumergroup%",
                     // Name of the APPLICATION SETTING
                     connection = "EventHubConnectionString",
                     dataType = "string",
