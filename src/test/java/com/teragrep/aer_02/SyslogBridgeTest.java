@@ -342,13 +342,13 @@ public final class SyslogBridgeTest {
 
         final String[] expectedProps = new String[] {
                 "{}",
-                "{\\\"aer-02-exception\\\":\\\"com.teragrep.akv_01.plugin.PluginException: java.lang.IllegalArgumentException: Invalid event type: SomeUnknownType\\\"}",
+                "{\\\"aer-02-exception\\\":\\\"com.teragrep.akv_01.plugin.PluginException: java.lang.IllegalArgumentException: Event was not of expected log format or type was not found\\\"}",
                 "{}",
                 "{}",
-                "{\\\"aer-02-exception\\\":\\\"com.teragrep.akv_01.plugin.PluginException: java.lang.IllegalArgumentException: Invalid event type: SomeUnknownType\\\"}",
+                "{\\\"aer-02-exception\\\":\\\"com.teragrep.akv_01.plugin.PluginException: java.lang.IllegalArgumentException: Event was not of expected log format or type was not found\\\"}",
                 "{}",
                 "{}",
-                "{\\\"aer-02-exception\\\":\\\"com.teragrep.akv_01.plugin.PluginException: java.lang.IllegalArgumentException: Invalid event type: SomeUnknownType\\\"}",
+                "{\\\"aer-02-exception\\\":\\\"com.teragrep.akv_01.plugin.PluginException: java.lang.IllegalArgumentException: Event was not of expected log format or type was not found\\\"}",
                 "{}",
         };
 
