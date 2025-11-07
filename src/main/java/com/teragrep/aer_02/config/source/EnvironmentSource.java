@@ -50,7 +50,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 
-public class EnvironmentSource implements Sourceable {
+public final class EnvironmentSource implements Sourceable {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(EnvironmentSource.class);
 

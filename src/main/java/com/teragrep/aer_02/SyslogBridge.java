@@ -59,7 +59,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.logging.Level;
 
-public class SyslogBridge {
+public final class SyslogBridge {
 
     public SyslogBridge() {
 
