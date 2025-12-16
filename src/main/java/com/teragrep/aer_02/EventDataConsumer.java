@@ -56,7 +56,6 @@ import com.teragrep.akv_01.plugin.PluginException;
 import com.teragrep.rlo_14.SDElement;
 import com.teragrep.rlo_14.SDParam;
 import com.teragrep.rlo_14.SyslogMessage;
-import com.teragrep.akv_01.plugin.*;
 import com.teragrep.rlp_01.RelpBatch;
 import jakarta.json.JsonException;
 
