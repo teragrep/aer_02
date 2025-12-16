@@ -45,7 +45,11 @@
  */
 package com.teragrep.aer_02;
 
-import com.microsoft.azure.functions.*;
+import com.microsoft.azure.functions.HttpMethod;
+import com.microsoft.azure.functions.HttpRequestMessage;
+import com.microsoft.azure.functions.HttpResponseMessage;
+import com.microsoft.azure.functions.HttpStatus;
+import com.microsoft.azure.functions.HttpStatusType;
 import com.teragrep.aer_02.fakes.ExecutionContextFake;
 import com.teragrep.aer_02.fakes.HttpResponseMessageBuilderFake;
 import com.teragrep.aer_02.fakes.PartitionContextFake;
@@ -69,7 +73,13 @@ import org.junit.jupiter.api.Test;
 import java.io.ByteArrayInputStream;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
