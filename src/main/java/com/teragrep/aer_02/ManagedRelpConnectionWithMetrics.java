@@ -62,6 +62,9 @@ import static com.codahale.metrics.MetricRegistry.name;
 
 public final class ManagedRelpConnectionWithMetrics implements IManagedRelpConnection {
 
+    private static final int DEFAULT_SEND_RESERVOIR_SIZE = 10000;
+    private static final int DEFAULT_CONNECT_RESERVOIR_SIZE = 10000;
+
     private final Logger logger;
     private final IRelpConnection relpConnection;
     private boolean hasConnected;
@@ -85,8 +88,8 @@ public final class ManagedRelpConnectionWithMetrics implements IManagedRelpConne
                 relpConnection,
                 name,
                 metricRegistry,
-                new SlidingWindowReservoir(10000),
-                new SlidingWindowReservoir(10000)
+                new SlidingWindowReservoir(DEFAULT_SEND_RESERVOIR_SIZE),
+                new SlidingWindowReservoir(DEFAULT_CONNECT_RESERVOIR_SIZE)
         );
     }
 
