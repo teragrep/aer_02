@@ -45,10 +45,12 @@
  */
 package com.teragrep.aer_02;
 
-import com.codahale.metrics.*;
+import com.codahale.metrics.MetricRegistry;
 import com.teragrep.aer_02.config.RelpConnectionConfig;
 import com.teragrep.rlp_01.RelpBatch;
-import com.teragrep.rlp_01.client.*;
+import com.teragrep.rlp_01.client.IManagedRelpConnection;
+import com.teragrep.rlp_01.client.ManagedRelpConnectionStub;
+import com.teragrep.rlp_01.client.SSLContextSupplier;
 import com.teragrep.rlp_01.pool.Pool;
 import com.teragrep.rlp_01.pool.UnboundPool;
 

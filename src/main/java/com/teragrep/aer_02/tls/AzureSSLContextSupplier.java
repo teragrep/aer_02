@@ -45,13 +45,18 @@
  */
 package com.teragrep.aer_02.tls;
 
+import com.azure.security.keyvault.jca.KeyVaultJcaProvider;
+import com.azure.security.keyvault.jca.KeyVaultKeyStore;
 import com.teragrep.rlp_01.client.SSLContextSupplier;
-import com.azure.security.keyvault.jca.*;
 import org.apache.hc.core5.ssl.SSLContexts;
 
 import javax.net.ssl.SSLContext;
 import java.io.IOException;
-import java.security.*;
+import java.security.KeyManagementException;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.Security;
 import java.security.cert.CertificateException;
 
 public final class AzureSSLContextSupplier implements SSLContextSupplier {

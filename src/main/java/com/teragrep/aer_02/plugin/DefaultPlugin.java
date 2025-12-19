@@ -56,7 +56,10 @@ import com.teragrep.rlo_14.SyslogMessage;
 
 import java.time.Instant;
 import java.time.ZonedDateTime;
-import java.util.*;
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
+import java.util.UUID;
 
 public final class DefaultPlugin implements Plugin {
 

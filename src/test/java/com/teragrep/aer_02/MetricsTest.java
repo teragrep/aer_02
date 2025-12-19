@@ -46,7 +46,11 @@
 package com.teragrep.aer_02;
 
 import com.codahale.metrics.MetricRegistry;
-import com.microsoft.azure.functions.*;
+import com.microsoft.azure.functions.HttpMethod;
+import com.microsoft.azure.functions.HttpRequestMessage;
+import com.microsoft.azure.functions.HttpResponseMessage;
+import com.microsoft.azure.functions.HttpStatus;
+import com.microsoft.azure.functions.HttpStatusType;
 import com.teragrep.aer_02.fakes.ExecutionContextFake;
 import com.teragrep.aer_02.fakes.HttpResponseMessageBuilderFake;
 import io.prometheus.client.CollectorRegistry;
@@ -57,7 +61,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.net.URI;
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 public class MetricsTest {
 
