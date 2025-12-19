@@ -73,7 +73,7 @@ public final class SyslogBridge {
                             HttpMethod.GET, HttpMethod.POST
                     },
                     authLevel = AuthorizationLevel.ANONYMOUS
-            ) HttpRequestMessage<Optional<String>> request,
+            ) final HttpRequestMessage<Optional<String>> request,
             final ExecutionContext context
     ) {
         context.getLogger().fine("Metrics HTTP trigger was triggered");
@@ -102,13 +102,13 @@ public final class SyslogBridge {
                     connection = "EventHubConnectionString",
                     dataType = "string",
                     cardinality = Cardinality.MANY
-            ) String[] events,
-            @BindingName("PartitionContext") Map<String, Object> partitionContext,
-            @BindingName("PropertiesArray") Map<String, Object>[] propertiesArray,
-            @BindingName("SystemPropertiesArray") Map<String, Object>[] systemPropertiesArray,
-            @BindingName("EnqueuedTimeUtcArray") List<Object> enqueuedTimeUtcArray,
-            @BindingName("OffsetArray") List<String> offsetArray,
-            ExecutionContext context
+            ) final String[] events,
+            @BindingName("PartitionContext") final Map<String, Object> partitionContext,
+            @BindingName("PropertiesArray") final Map<String, Object>[] propertiesArray,
+            @BindingName("SystemPropertiesArray") final Map<String, Object>[] systemPropertiesArray,
+            @BindingName("EnqueuedTimeUtcArray") final List<Object> enqueuedTimeUtcArray,
+            @BindingName("OffsetArray") final List<String> offsetArray,
+            final ExecutionContext context
     ) {
         try {
             if (context.getLogger().isLoggable(Level.FINE)) {

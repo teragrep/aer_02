@@ -62,41 +62,41 @@ public final class ManagedRelpConnectionWithMetricsFactory implements Supplier<I
     private final Logger logger;
 
     public ManagedRelpConnectionWithMetricsFactory(
-            Logger logger,
-            String name,
-            MetricRegistry metricRegistry,
-            RelpConfig relpConfig
+            final Logger logger,
+            final String name,
+            final MetricRegistry metricRegistry,
+            final RelpConfig relpConfig
     ) {
         this(logger, relpConfig, name, metricRegistry, new SocketConfigDefault());
     }
 
     public ManagedRelpConnectionWithMetricsFactory(
-            Logger logger,
-            RelpConfig relpConfig,
-            String name,
-            MetricRegistry metricRegistry,
-            SocketConfig socketConfig
+            final Logger logger,
+            final RelpConfig relpConfig,
+            final String name,
+            final MetricRegistry metricRegistry,
+            final SocketConfig socketConfig
     ) {
         this(logger, relpConfig, name, metricRegistry, socketConfig, new SSLContextSupplierStub());
     }
 
     public ManagedRelpConnectionWithMetricsFactory(
-            Logger logger,
-            RelpConfig relpConfig,
-            String name,
-            MetricRegistry metricRegistry,
-            SSLContextSupplier sslContextSupplier
+            final Logger logger,
+            final RelpConfig relpConfig,
+            final String name,
+            final MetricRegistry metricRegistry,
+            final SSLContextSupplier sslContextSupplier
     ) {
         this(logger, relpConfig, name, metricRegistry, new SocketConfigDefault(), sslContextSupplier);
     }
 
     public ManagedRelpConnectionWithMetricsFactory(
-            Logger logger,
-            RelpConfig relpConfig,
-            String name,
-            MetricRegistry metricRegistry,
-            SocketConfig socketConfig,
-            SSLContextSupplier sslContextSupplier
+            final Logger logger,
+            final RelpConfig relpConfig,
+            final String name,
+            final MetricRegistry metricRegistry,
+            final SocketConfig socketConfig,
+            final SSLContextSupplier sslContextSupplier
     ) {
         this.logger = logger;
         this.relpConfig = relpConfig;
