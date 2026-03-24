@@ -46,61 +46,22 @@
 package com.teragrep.aer_02;
 
 import com.microsoft.azure.functions.ExecutionContext;
-import com.microsoft.azure.functions.HttpMethod;
-import com.microsoft.azure.functions.HttpRequestMessage;
-import com.microsoft.azure.functions.HttpResponseMessage;
-import com.microsoft.azure.functions.HttpStatus;
-import com.microsoft.azure.functions.annotation.AuthorizationLevel;
 import com.microsoft.azure.functions.annotation.BindingName;
 import com.microsoft.azure.functions.annotation.Cardinality;
 import com.microsoft.azure.functions.annotation.EventHubTrigger;
 import com.microsoft.azure.functions.annotation.FunctionName;
-import com.microsoft.azure.functions.annotation.HttpTrigger;
 import com.teragrep.aer_02.plugin.LazyPluginMapInstance;
 import com.teragrep.aer_02.plugin.WrappedPluginFactoryWithConfig;
 import com.teragrep.akv_01.event.ParsedEventListFactory;
-import io.prometheus.client.CollectorRegistry;
-import io.prometheus.client.exporter.common.TextFormat;
 
-import java.io.IOException;
-import java.io.StringWriter;
-import java.io.UncheckedIOException;
-import java.io.Writer;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.logging.Level;
 
 public final class SyslogBridge {
 
     public SyslogBridge() {
 
-    }
-
-    @FunctionName("metrics")
-    public HttpResponseMessage metrics(
-            @HttpTrigger(
-                    name = "req",
-                    methods = {
-                            HttpMethod.GET, HttpMethod.POST
-                    },
-                    authLevel = AuthorizationLevel.ANONYMOUS
-            ) final HttpRequestMessage<Optional<String>> request,
-            final ExecutionContext context
-    ) {
-        context.getLogger().fine("Metrics HTTP trigger was triggered");
-        String contentType = TextFormat.chooseContentType(request.getHeaders().get("Accept"));
-
-        String body;
-        try (Writer writer = new StringWriter()) {
-            TextFormat.writeFormat(contentType, writer, CollectorRegistry.defaultRegistry.metricFamilySamples());
-            body = writer.toString();
-        }
-        catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
-
-        return request.createResponseBuilder(HttpStatus.OK).body(body).header("Accept", contentType).build();
     }
 
     @FunctionName("eventHubTriggerToSyslog")
