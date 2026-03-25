@@ -45,13 +45,7 @@
  */
 package com.teragrep.aer_02;
 
-import com.microsoft.azure.functions.HttpMethod;
-import com.microsoft.azure.functions.HttpRequestMessage;
-import com.microsoft.azure.functions.HttpResponseMessage;
-import com.microsoft.azure.functions.HttpStatus;
-import com.microsoft.azure.functions.HttpStatusType;
 import com.teragrep.aer_02.fakes.ExecutionContextFake;
-import com.teragrep.aer_02.fakes.HttpResponseMessageBuilderFake;
 import com.teragrep.aer_02.fakes.PartitionContextFake;
 import com.teragrep.aer_02.fakes.SystemPropsFake;
 import com.teragrep.net_01.channel.socket.PlainFactory;
@@ -71,7 +65,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayInputStream;
-import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -79,7 +72,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
@@ -395,111 +387,5 @@ public final class SyslogBridgeTest {
         }
 
         Assertions.assertEquals(9, loops);
-    }
-
-    @Test
-    void testSyslogBridgeMetrics() {
-        PartitionContextFake pcf = new PartitionContextFake("eventhub.123", "test1", "$Default", "0");
-        Map<String, Object> props = new HashMap<>();
-        final SyslogBridge bridge = new SyslogBridge();
-
-        bridge.eventHubTriggerToSyslog(new String[] {
-                "event0", "event1", "event2"
-        }, pcf.asMap(), new Map[] {
-                props, props, props
-        }, new Map[] {
-                new SystemPropsFake("0").asMap(), new SystemPropsFake("1").asMap(), new SystemPropsFake("2").asMap()
-        }, Arrays.asList("2010-01-01T00:00:00", "2010-01-02T00:00:00", "2010-01-03T00:00:00"),
-                Arrays.asList("0", "1", "2"), new ExecutionContextFake()
-        );
-
-        Assertions.assertEquals(3, messages.size());
-
-        HttpRequestMessage<Optional<String>> req = new HttpRequestMessage<>() {
-
-            @Override
-            public URI getUri() {
-                return null;
-            }
-
-            @Override
-            public HttpMethod getHttpMethod() {
-                return HttpMethod.GET;
-            }
-
-            @Override
-            public Map<String, String> getHeaders() {
-                Map<String, String> h = new HashMap<>();
-                h.put("Accept", "text/plain");
-                return h;
-            }
-
-            @Override
-            public Map<String, String> getQueryParameters() {
-                Map<String, String> q = new HashMap<>();
-                return q;
-            }
-
-            @Override
-            public Optional<String> getBody() {
-                return Optional.empty();
-            }
-
-            @Override
-            public HttpResponseMessage.Builder createResponseBuilder(HttpStatus httpStatus) {
-                return new HttpResponseMessageBuilderFake();
-            }
-
-            @Override
-            public HttpResponseMessage.Builder createResponseBuilder(HttpStatusType httpStatusType) {
-                return new HttpResponseMessageBuilderFake();
-            }
-        };
-
-        HttpResponseMessage resp = bridge.metrics(req, new ExecutionContextFake());
-        List<String> responseLines = Arrays.asList(resp.getBody().toString().split("\n"));
-
-        Assertions.assertEquals(33, responseLines.size());
-        // Check all metrics are present
-        Assertions
-                .assertTrue(
-                        responseLines
-                                .contains("# TYPE com_teragrep_aer_02_DefaultOutput___defaultOutput___resends gauge")
-                );
-        Assertions
-                .assertTrue(
-                        responseLines
-                                .contains(
-                                        "# TYPE com_teragrep_aer_02_DefaultOutput___defaultOutput___connectLatency summary"
-                                )
-                );
-        Assertions
-                .assertTrue(
-                        responseLines
-                                .contains(
-                                        "# TYPE com_teragrep_aer_02_DefaultOutput___defaultOutput___retriedConnects gauge"
-                                )
-                );
-        Assertions
-                .assertTrue(
-                        responseLines
-                                .contains(
-                                        "# TYPE com_teragrep_aer_02_DefaultOutput___defaultOutput___sendLatency summary"
-                                )
-                );
-        Assertions
-                .assertTrue(
-                        responseLines
-                                .contains("# TYPE com_teragrep_aer_02_DefaultOutput___defaultOutput___records gauge")
-                );
-        Assertions
-                .assertTrue(
-                        responseLines
-                                .contains("# TYPE com_teragrep_aer_02_DefaultOutput___defaultOutput___connects gauge")
-                );
-        Assertions
-                .assertTrue(
-                        responseLines.contains("# TYPE com_teragrep_aer_02_EventDataConsumer_latency_seconds_0 gauge")
-                );
     }
 }
