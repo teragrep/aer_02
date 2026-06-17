@@ -30,7 +30,7 @@ See the official documentation on https://docs.teragrep.com[docs.teragrep.com].
 Currently only a default `Plugin` is included in the project. If other type of additional message processing is required,
 a class implementing `Plugin` and `PluginFactory` must be created and added to the configuration file.
 
-== How to [compile/use/implement]
+== How to
 
 // add instructions how people can start to use your project
 
@@ -43,7 +43,7 @@ $ JAVA_HOME=/usr/lib/jvm/java-11-openjdk mvn clean package
 ----
 Using the `package` lifecycle ensures that the necessary JSON manifests to run the Azure Functions are generated.
 
-=== Usage in Azure
+=== Use in Azure
 
 The project must be deployed as a Function in a Function App. The Function App requires or supports the following Environment variables:
 
