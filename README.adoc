@@ -7,16 +7,16 @@
 
 // Add a short description of your project. Tell what your project does and what it's used for.
 
-Allows conversion of Azure EventHub events to Syslog messages and sending them to a RELP server.
+Allows conversion of Microsoft Azure EventHub events to Syslog messages and sending them to a RELP server.
 Additional processing of the events can be performed based on the `resourceId` of the event and an assigned `Plugin`.
 
 == Features
 
 // List your project's features
-* Receives events from Azure EventHub using Azure Java Function.
+* Receives events from Microsoft Azure EventHub using Microsoft Azure Java Function.
 * Converts said events to Syslog format.
 * Allows sending said Syslog-formatted messages to a RELP server.
-* Allows the usage of a certificate from Azure KeyVault for TLS encryption.
+* Allows the usage of a certificate from Microsoft Azure KeyVault for TLS encryption.
 * Provides HTTPTrigger function for Prometheus metrics.
 * Implements akv_01 library for additional syslog message processing based on `resourceId` from events received from EventHub.
 
@@ -30,20 +30,16 @@ See the official documentation on https://docs.teragrep.com[docs.teragrep.com].
 Currently only a default `Plugin` is included in the project. If other type of additional message processing is required,
 a class implementing `Plugin` and `PluginFactory` must be created and added to the configuration file.
 
-== How to [compile/use/implement]
+== How to compile using Apache Maven
 
-// add instructions how people can start to use your project
-
-=== Compile using Maven
-
-The project can be compiled using Maven. It is recommended to use Java 11.
+The project can be compiled using Apache Maven. It is recommended to use Java 11.
 [source,bash]
 ----
 $ JAVA_HOME=/usr/lib/jvm/java-11-openjdk mvn clean package
 ----
 Using the `package` lifecycle ensures that the necessary JSON manifests to run the Azure Functions are generated.
 
-=== Usage in Azure
+== How to use in Microsoft Azure
 
 The project must be deployed as a Function in a Function App. The Function App requires or supports the following Environment variables:
 
