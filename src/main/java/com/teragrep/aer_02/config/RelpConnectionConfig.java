@@ -54,6 +54,18 @@ import java.time.Duration;
 
 public final class RelpConnectionConfig {
 
+    private static final int DEFAULT_CONNECTION_TIMEOUT = 2500;
+    private static final int DEFAULT_TRANSACTION_READ_TIMEOUT = 1500;
+    private static final int DEFAULT_TRANSACTION_WRITE_TIMEOUT = 1500;
+    private static final int DEFAULT_RETRY_INTERVAL = 500;
+    private static final int DEFAULT_CONNECTION_PORT = 601;
+    private static final String DEFAULT_CONNECTION_ADDRESS = "localhost";
+    private static final int DEFAULT_REBIND_AMOUNT = 100000;
+    private static final String DEFAULT_REBIND_ENABLED = "true";
+    private static final long DEFAULT_IDLE_DURATION = 150000L;
+    private static final String DEFAULT_IDLE_ENABLED = "false";
+    private static final String DEFAULT_CONNECTION_KEEPALIVE = "true";
+
     private final int connectTimeout;
     private final int readTimeout;
     private final int writeTimeout;
@@ -68,17 +80,34 @@ public final class RelpConnectionConfig {
 
     public RelpConnectionConfig(final Sourceable configSource) {
         this(
-                Integer.parseInt(configSource.source("relp.connection.timeout", "2500")),
-                Integer.parseInt(configSource.source("relp.transaction.read.timeout", "1500")),
-                Integer.parseInt(configSource.source("relp.transaction.write.timeout", "1500")),
-                Integer.parseInt(configSource.source("relp.connection.retry.interval", "500")),
-                Integer.parseInt(configSource.source("relp.connection.port", "601")),
-                configSource.source("relp.connection.address", "localhost"),
-                Integer.parseInt(configSource.source("relp.rebind.request.amount", "100000")),
-                Boolean.parseBoolean(configSource.source("relp.rebind.enabled", "true")),
-                Duration.parse(configSource.source("relp.max.idle.duration", Duration.ofMillis(150000L).toString())),
-                Boolean.parseBoolean(configSource.source("relp.max.idle.enabled", "false")),
-                Boolean.parseBoolean(configSource.source("relp.connection.keepalive", "true"))
+                Integer
+                        .parseInt(
+                                configSource.source("relp.connection.timeout", String.valueOf(DEFAULT_CONNECTION_TIMEOUT))
+                        ),
+                Integer
+                        .parseInt(
+                                configSource
+                                        .source(
+                                                "relp.transaction.read.timeout",
+                                                String.valueOf(DEFAULT_TRANSACTION_READ_TIMEOUT)
+                                        )
+                        ),
+                Integer
+                        .parseInt(
+                                configSource
+                                        .source(
+                                                "relp.transaction.write.timeout",
+                                                String.valueOf(DEFAULT_TRANSACTION_WRITE_TIMEOUT)
+                                        )
+                        ),
+                Integer
+                        .parseInt(
+                                configSource
+                                        .source("relp.connection.retry.interval", String.valueOf(DEFAULT_RETRY_INTERVAL))
+                        ),
+                Integer.parseInt(configSource.source("relp.connection.port", String.valueOf(DEFAULT_CONNECTION_PORT))),
+                configSource.source("relp.connection.address", DEFAULT_CONNECTION_ADDRESS),
+                Integer.parseInt(configSource.source("relp.rebind.request.amount", String.valueOf(DEFAULT_REBIND_AMOUNT))), Boolean.parseBoolean(configSource.source("relp.rebind.enabled", DEFAULT_REBIND_ENABLED)), Duration.parse(configSource.source("relp.max.idle.duration", Duration.ofMillis(DEFAULT_IDLE_DURATION).toString())), Boolean.parseBoolean(configSource.source("relp.max.idle.enabled", DEFAULT_IDLE_ENABLED)), Boolean.parseBoolean(configSource.source("relp.connection.keepalive", DEFAULT_CONNECTION_KEEPALIVE))
 
         );
     }
